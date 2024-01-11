@@ -8,10 +8,10 @@ pub const POP_SIZE: usize = 100;
 const G: f64 = 0.1;
 
 const DEFAULT_PARTICLE: Particle = Particle {
-    mass: 1f64,
+    mass: 0f64,
     speed: [0f64; DIMENSIONS],
     position: [0f64; DIMENSIONS],
-    id: 1,
+    id: 0,
 };
 
 const DEFAULT_POP: [Particle; POP_SIZE] = [DEFAULT_PARTICLE; POP_SIZE];
@@ -54,33 +54,33 @@ fn distance(a: Coordinates, b: Coordinates) -> f64 {
 
 pub fn apply_force(particles: &[Particle; POP_SIZE]) -> [Particle; POP_SIZE] {
     let mut computed_particles = DEFAULT_POP;
-    let mut i = 0;
-    for particle_a in particles {
+    let mut affected_particle_index = 0;
+    for affected_particle in particles {
         let mut acc: Coordinates = [0f64; DIMENSIONS];
-        for particle_b in particles {
-            if particle_a.id == particle_b.id {
+        for affecting_particle in particles {
+            if affected_particle.id == affecting_particle.id {
                 continue;
             }
-            let force = G * (particle_a.mass * particle_b.mass)
-                / distance(particle_a.position, particle_b.position).powf(2f64);
+            let force = G * (affected_particle.mass * affecting_particle.mass)
+                / distance(affected_particle.position, affecting_particle.position).powf(2f64);
             for i in 0..DIMENSIONS {
-                acc[i] =
-                    force * (particle_b.position[i] - particle_a.position[i]) / particle_a.mass;
+                acc[i] = force * (affecting_particle.position[i] - affected_particle.position[i])
+                    / affected_particle.mass;
             }
         }
         let mut new_speed = [0f64; DIMENSIONS];
         let mut new_position = [0f64; DIMENSIONS];
         for i in 0..DIMENSIONS {
-            new_speed[i] = particle_a.speed[i] + acc[i];
-            new_position[i] = particle_a.position[i] + new_speed[i];
+            new_speed[i] = affected_particle.speed[i] + acc[i];
+            new_position[i] = affected_particle.position[i] + new_speed[i];
         }
-        computed_particles[i] = Particle {
-            id: particle_a.id,
-            mass: particle_a.mass,
+        computed_particles[affected_particle_index] = Particle {
+            id: affected_particle.id,
+            mass: affected_particle.mass,
             speed: new_speed,
             position: new_position,
         };
-        i += 1;
+        affected_particle_index += 1;
     }
     return computed_particles;
 }
