@@ -7,23 +7,20 @@ pub const POP_SIZE: usize = 100;
 
 const G: f64 = 0.1;
 
-#[derive(Copy)]
+const DEFAULT_PARTICLE: Particle = Particle {
+    mass: 1f64,
+    speed: [0f64; DIMENSIONS],
+    position: [0f64; DIMENSIONS],
+    id: 1,
+};
+
+const DEFAULT_POP: [Particle; POP_SIZE] = [DEFAULT_PARTICLE; POP_SIZE];
+
 pub struct Particle {
     mass: f64,
     speed: Coordinates,
     pub position: Coordinates,
     pub id: u64,
-}
-
-impl Clone for Particle {
-    fn clone(&self) -> Self {
-        return Self {
-            mass: self.mass,
-            speed: self.speed,
-            position: self.position,
-            id: self.id
-        }
-    }
 }
 
 impl Particle {
@@ -37,17 +34,8 @@ impl Particle {
         }
     }
 
-    pub fn vec_of_new_random(length: u64) -> Vec<Self> {
-        (0..length).map(|_| Self::new_random()).collect()
-    }
-
     pub fn new_random_pop() -> [Particle; POP_SIZE] {
-        let mut pop = [Self {
-            mass: 1f64,
-            speed: [0f64; DIMENSIONS],
-            position: [0f64; DIMENSIONS],
-            id: 1,
-        }; POP_SIZE];
+        let mut pop = DEFAULT_POP;
         for i in 0..POP_SIZE {
             pop[i] = Self::new_random();
         }
@@ -65,11 +53,11 @@ fn distance(a: Coordinates, b: Coordinates) -> f64 {
 }
 
 pub fn apply_force(particles: &[Particle; POP_SIZE]) -> [Particle; POP_SIZE] {
-    let mut computed_particles = particles.clone();
+    let mut computed_particles = DEFAULT_POP;
     let mut i = 0;
     for particle_a in particles {
         let mut acc: Coordinates = [0f64; DIMENSIONS];
-        for particle_b in particles.iter() {
+        for particle_b in particles {
             if particle_a.id == particle_b.id {
                 continue;
             }
