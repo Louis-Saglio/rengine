@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use piston_window::{
-    clear, Context, ellipse, Event, G2d, Input, Loop, Motion, PistonWindow, WindowSettings,
+    clear, ellipse, Context, Event, G2d, Input, Loop, Motion, PistonWindow, WindowSettings,
 };
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 
 use crate::physics::{apply_force, Particle, Population};
 
@@ -11,7 +11,7 @@ struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
     zoom_level: f64,
     must_clear_screen: bool,
-    color_by_particle_id: HashMap<u64, [f64; 3]>
+    color_by_particle_id: HashMap<u64, [f64; 3]>,
 }
 
 impl GraphicalCoordinatesCalculator {
@@ -41,9 +41,10 @@ impl GraphicalCoordinatesCalculator {
     fn get_particle_color(&mut self, particle_id: u64) -> [f64; 3] {
         if !self.color_by_particle_id.contains_key(&particle_id) {
             let mut rng = thread_rng();
-            self.color_by_particle_id.insert(particle_id, [rng.gen(), rng.gen(), rng.gen()]);
+            self.color_by_particle_id
+                .insert(particle_id, [rng.gen(), rng.gen(), rng.gen()]);
         };
-        return self.color_by_particle_id[&particle_id]
+        return self.color_by_particle_id[&particle_id];
     }
 }
 
@@ -62,7 +63,9 @@ impl Engine {
             let graphical_coordinates = self
                 .graphical_coordinates_calculator
                 .compute_graphical_coordinates(&particle);
-            let color = self.graphical_coordinates_calculator.get_particle_color(particle.id);
+            let color = self
+                .graphical_coordinates_calculator
+                .get_particle_color(particle.id);
             ellipse(
                 [color[0] as f32, color[1] as f32, color[2] as f32, 1.0],
                 graphical_coordinates,
@@ -77,19 +80,18 @@ impl Engine {
     }
 }
 
-
-pub fn run(particles: Population) {
+pub fn run() {
     let mut window: PistonWindow = WindowSettings::new("Rengine", [1000, 800])
         .exit_on_esc(true)
         .build()
         .unwrap();
     let mut engine = Engine {
-        particles,
+        particles: Particle::new_random_pop_in_screen(1000, 800),
         graphical_coordinates_calculator: GraphicalCoordinatesCalculator {
             window_size: [1000, 800],
-            zoom_level: 5f64,
+            zoom_level: 1f64,
             must_clear_screen: true,
-            color_by_particle_id: HashMap::new()
+            color_by_particle_id: HashMap::new(),
         },
     };
 

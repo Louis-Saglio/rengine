@@ -2,14 +2,14 @@
 
 use rand::Rng;
 
-pub const DIMENSIONS: usize = 3;
+pub const DIMENSIONS: usize = 2;
 type Coordinates = [f64; DIMENSIONS];
 
 const DEFAULT_COORDINATES: Coordinates = [0f64; DIMENSIONS];
 
-pub const POP_SIZE: usize = 1000;
+pub const POP_SIZE: usize = 4;
 
-const G: f64 = 0.1;
+const G: f64 = 0.9;
 
 const DEFAULT_PARTICLE: Particle = Particle {
     mass: 0f64,
@@ -44,6 +44,28 @@ impl Particle {
         let mut pop = DEFAULT_POP;
         for i in 0..POP_SIZE {
             pop[i] = Self::new_random();
+        }
+        return pop;
+    }
+
+    pub fn new_random_pop_in_screen(width: u32, height: u32) -> Population {
+        let mut rng = rand::thread_rng();
+        let mut pop = DEFAULT_POP;
+        let half_width = width as f64 / 2f64;
+        let half_height = height as f64 / 2f64;
+        for i in 0..POP_SIZE {
+            let mut position = DEFAULT_COORDINATES;
+            position[0] = rng.gen_range((-half_width)..half_width);
+            position[1] = rng.gen_range((-half_height)..half_height);
+            for i in 2..DIMENSIONS {
+                position[i] = rng.gen();
+            }
+            pop[i] = Self {
+                mass: 1f64,
+                speed: [0f64; DIMENSIONS],
+                position,
+                id: rng.gen(),
+            };
         }
         return pop;
     }
