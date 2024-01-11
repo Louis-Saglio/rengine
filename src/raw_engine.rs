@@ -1,11 +1,11 @@
 use std::time::Instant;
-use crate::physics::{apply_force, Population};
+use crate::physics::{apply_force, gravity, Population};
 
 pub fn run(particles: Population, iterations: u64) {
     let mut particles = particles;
     let start = Instant::now();
     for _ in 0..iterations {
-        particles = apply_force(&particles)
+        particles = apply_force(&particles, vec![gravity])
     }
     let duration = start.elapsed();
     println!("Total time elapsed is: {:?}", duration);

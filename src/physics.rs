@@ -7,9 +7,9 @@ type Coordinates = [f64; DIMENSIONS];
 
 const DEFAULT_COORDINATES: Coordinates = [0f64; DIMENSIONS];
 
-pub const POP_SIZE: usize = 4;
+pub const POP_SIZE: usize = 100;
 
-const G: f64 = 0.9;
+const G: f64 = 50f64;
 
 const DEFAULT_PARTICLE: Particle = Particle {
     mass: 0f64,
@@ -69,9 +69,38 @@ impl Particle {
         }
         return pop;
     }
+
+    // pub fn new_test_pop() -> Population {
+    //     return [
+    //         Particle {
+    //             mass: 10f64,
+    //             id: 0,
+    //             speed: DEFAULT_COORDINATES,
+    //             position: [100f64, 100f64],
+    //         },
+    //         Particle {
+    //             mass: 10f64,
+    //             id: 1,
+    //             speed: DEFAULT_COORDINATES,
+    //             position: [100f64, -100f64],
+    //         },
+    //         Particle {
+    //             mass: 10f64,
+    //             id: 2,
+    //             speed: DEFAULT_COORDINATES,
+    //             position: [-100f64, -100f64],
+    //         },
+    //         Particle {
+    //             mass: 10f64,
+    //             id: 3,
+    //             speed: DEFAULT_COORDINATES,
+    //             position: [-100f64, 100f64],
+    //         },
+    //     ];
+    // }
 }
 
-fn distance(a: Coordinates, b: Coordinates) -> f64 {
+pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
     let mut sum = 0.0;
     for i in 0..a.len() {
         let diff = a[i] - b[i];
@@ -80,7 +109,14 @@ fn distance(a: Coordinates, b: Coordinates) -> f64 {
     sum.sqrt()
 }
 
-pub fn apply_force(particles: &[Particle; POP_SIZE]) -> Population {
+pub fn gravity(affecting_particle: &Particle, affected_particle: &Particle, distance: f64) -> f64 {
+    return G * (affected_particle.mass * affecting_particle.mass) / distance.powf(2f64);
+}
+
+pub fn apply_force(
+    particles: &[Particle; POP_SIZE],
+    force_generators: Vec<fn(&Particle, &Particle, f64) -> f64>,
+) -> Population {
     let mut computed_particles = DEFAULT_POP;
     let mut affected_particle_index = 0;
     for affected_particle in particles {
@@ -89,18 +125,23 @@ pub fn apply_force(particles: &[Particle; POP_SIZE]) -> Population {
             if affected_particle.id == affecting_particle.id {
                 continue;
             }
-            let force = G * (affected_particle.mass * affecting_particle.mass)
-                / distance(affected_particle.position, affecting_particle.position).powf(2f64);
+            let distance =
+                distance(affected_particle.position, affecting_particle.position);
+            let mut force = 0f64;
+            for force_generator in &force_generators {
+                force += force_generator(affecting_particle, affected_particle, distance);
+            }
             for i in 0..DIMENSIONS {
-                acc[i] = force * (affecting_particle.position[i] - affected_particle.position[i])
+                acc[i] += force
+                    * ((affecting_particle.position[i] - affected_particle.position[i]) / distance)
                     / affected_particle.mass;
             }
         }
         let mut new_speed = DEFAULT_COORDINATES;
         let mut new_position = DEFAULT_COORDINATES;
         for i in 0..DIMENSIONS {
+            new_position[i] = affected_particle.position[i] + affected_particle.speed[i];
             new_speed[i] = affected_particle.speed[i] + acc[i];
-            new_position[i] = affected_particle.position[i] + new_speed[i];
         }
         computed_particles[affected_particle_index] = Particle {
             id: affected_particle.id,

@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use piston_window::{
-    clear, ellipse, Context, Event, G2d, Input, Loop, Motion, PistonWindow, WindowSettings,
-};
+use piston_window::{clear, ellipse, Context, Event, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, EventLoop};
 use rand::{thread_rng, Rng};
 
-use crate::physics::{apply_force, Particle, Population};
+use crate::physics::{apply_force, gravity, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -57,7 +55,7 @@ impl Engine {
     fn render(&mut self, context: Context, graphics: &mut G2d) {
         if self.graphical_coordinates_calculator.must_clear_screen {
             clear([0.0, 0.0, 0.0, 1.0], graphics);
-            self.graphical_coordinates_calculator.must_clear_screen = false;
+            // self.graphical_coordinates_calculator.must_clear_screen = false;
         }
         for particle in &self.particles {
             let graphical_coordinates = self
@@ -76,19 +74,24 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        self.particles = apply_force(&self.particles)
+        self.particles = apply_force(&self.particles, vec![gravity])
     }
 }
 
 pub fn run() {
-    let mut window: PistonWindow = WindowSettings::new("Rengine", [1000, 800])
+    let width = 1900;
+    let height = 1000;
+    let mut window: PistonWindow = WindowSettings::new("Rengine", [width, height])
         .exit_on_esc(true)
         .build()
         .unwrap();
+    window.set_max_fps(120);
+    window.set_ups(120);
     let mut engine = Engine {
-        particles: Particle::new_random_pop_in_screen(1000, 800),
+        // particles: Particle::new_test_pop(),
+        particles: Particle::new_random_pop_in_screen(width, height),
         graphical_coordinates_calculator: GraphicalCoordinatesCalculator {
-            window_size: [1000, 800],
+            window_size: [width, height],
             zoom_level: 1f64,
             must_clear_screen: true,
             color_by_particle_id: HashMap::new(),
