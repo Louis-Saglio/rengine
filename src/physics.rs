@@ -103,7 +103,7 @@ impl Particle {
 
 pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
     let mut sum = 0.0;
-    for i in 0..a.len() {
+    for i in 0..DIMENSIONS {
         let diff = a[i] - b[i];
         sum += diff * diff;
     }
@@ -172,13 +172,13 @@ pub fn apply_force_2(particles: &[Particle; POP_SIZE]) -> Population {
         for particle_b_index in particle_a_index + 1..POP_SIZE {
             let particle_b = &particles[particle_b_index];
             let distance = distance(particle_a.position, particle_b.position);
-            let g_by_d_squared = G / (distance * distance);
-            let force_by_mass_a = particle_b.mass * g_by_d_squared;
-            let force_by_mass_b = particle_a.mass * g_by_d_squared;
+            let g_by_d_cubed = G / (distance * distance * distance);
+            let force_by_mass_a_by_distance = particle_b.mass * g_by_d_cubed;
+            let force_by_mass_b_by_distance = particle_a.mass * g_by_d_cubed;
             for i in 0..DIMENSIONS {
-                let acc = (particle_b.position[i] - particle_a.position[i]) / distance;
-                computed_particles[particle_a_index].speed[i] += acc * force_by_mass_a;
-                computed_particles[particle_b_index].speed[i] -= acc * force_by_mass_b;
+                let direction = particle_b.position[i] - particle_a.position[i];
+                computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a_by_distance;
+                computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b_by_distance;
             }
         }
         for i in 0..DIMENSIONS {
