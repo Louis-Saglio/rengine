@@ -2,7 +2,7 @@
 
 use rand::Rng;
 
-pub const DIMENSIONS: usize = 2;
+pub const DIMENSIONS: usize = 3;
 type Coordinates = [f64; DIMENSIONS];
 
 const DEFAULT_COORDINATES: Coordinates = [0f64; DIMENSIONS];
@@ -113,35 +113,56 @@ pub fn gravity(affecting_particle: &Particle, affected_particle: &Particle, dist
     return G * (affected_particle.mass * affecting_particle.mass) / distance.powf(2f64);
 }
 
+fn merge(affecting_particle: &Particle, affected_particle: &Particle) -> Particle {
+    let affected_must_be_destroyed = affecting_particle.mass > affected_particle.mass
+        || affecting_particle.id > affected_particle.id;
+    return if affected_must_be_destroyed {
+        Particle {
+            id: affected_particle.id,
+            mass: 0f64,
+            position: DEFAULT_COORDINATES,
+            speed: DEFAULT_COORDINATES,
+        }
+    } else {
+        let mass = affecting_particle.mass + affected_particle.mass;
+        let mut speed = DEFAULT_COORDINATES;
+        for i in 0..DIMENSIONS {
+            speed[i] = (affecting_particle.speed[i] * affecting_particle.mass
+                + affected_particle.speed[i] * affected_particle.mass)
+                / mass;
+        }
+        Particle {
+            id: affected_particle.id,
+            mass,
+            position: affected_particle.position,
+            speed,
+        }
+    };
+}
+
 pub fn apply_force(
-    particles: &[Particle; POP_SIZE],
-    force_generators: Vec<fn(&Particle, &Particle, f64) -> f64>,
+    particles: &[Particle; POP_SIZE]
 ) -> Population {
     let mut computed_particles = DEFAULT_POP;
     let mut affected_particle_index = 0;
     for affected_particle in particles {
-        let mut acc: Coordinates = DEFAULT_COORDINATES;
+        let mut acceleration: Coordinates = DEFAULT_COORDINATES;
         for affecting_particle in particles {
             if affected_particle.id == affecting_particle.id {
                 continue;
             }
-            let distance =
-                distance(affected_particle.position, affecting_particle.position);
-            let mut force = 0f64;
-            for force_generator in &force_generators {
-                force += force_generator(affecting_particle, affected_particle, distance);
-            }
+            let distance = distance(affected_particle.position, affecting_particle.position);
+            let force_by_mass = G * affecting_particle.mass / (distance * distance);
             for i in 0..DIMENSIONS {
-                acc[i] += force
-                    * ((affecting_particle.position[i] - affected_particle.position[i]) / distance)
-                    / affected_particle.mass;
+                acceleration[i] += force_by_mass
+                    * ((affecting_particle.position[i] - affected_particle.position[i]) / distance);
             }
         }
         let mut new_speed = DEFAULT_COORDINATES;
         let mut new_position = DEFAULT_COORDINATES;
         for i in 0..DIMENSIONS {
             new_position[i] = affected_particle.position[i] + affected_particle.speed[i];
-            new_speed[i] = affected_particle.speed[i] + acc[i];
+            new_speed[i] = affected_particle.speed[i] + acceleration[i];
         }
         computed_particles[affected_particle_index] = Particle {
             id: affected_particle.id,

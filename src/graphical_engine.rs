@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use piston_window::{clear, ellipse, Context, Event, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, EventLoop, text, Transformed};
+use piston_window::{
+    clear, ellipse, text, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow,
+    Transformed, WindowSettings,
+};
 use rand::{thread_rng, Rng};
 
-use crate::physics::{apply_force, gravity, Particle, Population};
+use crate::physics::{apply_force, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -58,6 +61,9 @@ impl Engine {
             // self.graphical_coordinates_calculator.must_clear_screen = false;
         }
         for particle in &self.particles {
+            if particle.mass == 0f64 {
+                continue;
+            }
             let graphical_coordinates = self
                 .graphical_coordinates_calculator
                 .compute_graphical_coordinates(&particle);
@@ -74,7 +80,7 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        self.particles = apply_force(&self.particles, vec![gravity])
+        self.particles = apply_force(&self.particles)
     }
 }
 
@@ -88,7 +94,9 @@ pub fn run() {
     window.set_max_fps(120);
     window.set_ups(120);
 
-    let mut glyphs = window.load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf").unwrap();
+    let mut glyphs = window
+        .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
+        .unwrap();
 
     let mut engine = Engine {
         // particles: Particle::new_test_pop(),
@@ -109,13 +117,15 @@ pub fn run() {
             Event::Loop(Loop::Render(_)) => {
                 window.draw_2d(&event, |context, graphics, _device| {
                     engine.render(context, graphics);
-                    text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32).draw(
-                        "I love you",
-                        &mut glyphs,
-                        &context.draw_state,
-                        context.transform.trans(10.0, 100.0),
-                        graphics,
-                    ).unwrap();
+                    text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
+                        .draw(
+                            "I love you",
+                            &mut glyphs,
+                            &context.draw_state,
+                            context.transform.trans(10.0, 100.0),
+                            graphics,
+                        )
+                        .unwrap();
                     glyphs.factory.encoder.flush(_device);
                 });
             }
