@@ -6,7 +6,7 @@ use piston_window::{
 };
 use rand::{thread_rng, Rng};
 
-use crate::physics::{apply_force, Particle, Population};
+use crate::physics::{apply_force, apply_force_2, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -80,7 +80,8 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        self.particles = apply_force(&self.particles)
+        // self.particles = apply_force(&self.particles)
+        self.particles = apply_force_2(&self.particles)
     }
 }
 
@@ -91,8 +92,8 @@ pub fn run() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_max_fps(120);
-    window.set_ups(120);
+    window.set_max_fps(60);
+    window.set_ups(60);
 
     let mut glyphs = window
         .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
@@ -117,16 +118,16 @@ pub fn run() {
             Event::Loop(Loop::Render(_)) => {
                 window.draw_2d(&event, |context, graphics, _device| {
                     engine.render(context, graphics);
-                    text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
-                        .draw(
-                            "I love you",
-                            &mut glyphs,
-                            &context.draw_state,
-                            context.transform.trans(10.0, 100.0),
-                            graphics,
-                        )
-                        .unwrap();
-                    glyphs.factory.encoder.flush(_device);
+                    // text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
+                    //     .draw(
+                    //         "I love you",
+                    //         &mut glyphs,
+                    //         &context.draw_state,
+                    //         context.transform.trans(10.0, 100.0),
+                    //         graphics,
+                    //     )
+                    //     .unwrap();
+                    // glyphs.factory.encoder.flush(_device);
                 });
             }
             Event::Loop(Loop::Update(_)) => engine.update(),
