@@ -1,9 +1,7 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 
-use piston_window::{
-    clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow,
-    WindowSettings,
-};
+use piston_window::{clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, text, Transformed};
 use rand::{thread_rng, Rng};
 
 use crate::physics::{apply_force, Particle, Population};
@@ -94,9 +92,9 @@ pub fn run() {
     window.set_max_fps(60);
     window.set_ups(60);
 
-    // let mut glyphs = window
-    //     .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
-    //     .unwrap();
+    let mut glyphs = window
+        .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
+        .unwrap();
 
     let mut engine = Engine {
         // particles: Particle::new_test_pop(),
@@ -115,18 +113,19 @@ pub fn run() {
                 engine.graphical_coordinates_calculator.zoom(scroll[1])
             }
             Event::Loop(Loop::Render(_)) => {
+                let nbr = engine.particles.iter().filter(|&particle| particle.mass != 0f64).count();
                 window.draw_2d(&event, |context, graphics, _device| {
                     engine.render(context, graphics);
-                    // text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
-                    //     .draw(
-                    //         "I love you",
-                    //         &mut glyphs,
-                    //         &context.draw_state,
-                    //         context.transform.trans(10.0, 100.0),
-                    //         graphics,
-                    //     )
-                    //     .unwrap();
-                    // glyphs.factory.encoder.flush(_device);
+                    text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
+                        .draw(
+                            &*format!("{}", nbr),
+                            &mut glyphs,
+                            &context.draw_state,
+                            context.transform.trans(10.0, 100.0),
+                            graphics,
+                        )
+                        .unwrap();
+                    glyphs.factory.encoder.flush(_device);
                 });
             }
             Event::Loop(Loop::Update(_)) => engine.update(),
