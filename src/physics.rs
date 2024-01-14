@@ -15,7 +15,6 @@ const DEFAULT_PARTICLE: Particle = Particle {
     mass: 0f64,
     speed: [0f64; DIMENSIONS],
     position: [0f64; DIMENSIONS],
-    id: 0,
 };
 
 pub type Population = [Particle; POP_SIZE];
@@ -27,7 +26,6 @@ pub struct Particle {
     pub mass: f64,
     pub speed: Coordinates,
     pub position: Coordinates,
-    pub id: u64,
 }
 
 impl Particle {
@@ -37,7 +35,6 @@ impl Particle {
             mass: 1f64,
             speed: [0f64; DIMENSIONS],
             position: rng.gen(),
-            id: rng.gen(),
         }
     }
 
@@ -65,7 +62,6 @@ impl Particle {
                 mass: 1f64,
                 speed: [0f64; DIMENSIONS],
                 position,
-                id: rng.gen(),
             };
         }
         return pop;
@@ -110,62 +106,7 @@ pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
     sum.sqrt()
 }
 
-pub fn gravity(affecting_particle: &Particle, affected_particle: &Particle, distance: f64) -> f64 {
-    return G * (affected_particle.mass * affecting_particle.mass) / distance.powf(2f64);
-}
-
-fn merge(affecting_particle: &Particle, affected_particle: &Particle) -> Particle {
-    let affected_must_be_destroyed = affecting_particle.mass > affected_particle.mass
-        || affecting_particle.id > affected_particle.id;
-    return if affected_must_be_destroyed {
-        Particle {
-            id: affected_particle.id,
-            mass: 0f64,
-            position: DEFAULT_COORDINATES,
-            speed: DEFAULT_COORDINATES,
-        }
-    } else {
-        let mass = affecting_particle.mass + affected_particle.mass;
-        let mut speed = DEFAULT_COORDINATES;
-        for i in 0..DIMENSIONS {
-            speed[i] = (affecting_particle.speed[i] * affecting_particle.mass
-                + affected_particle.speed[i] * affected_particle.mass)
-                / mass;
-        }
-        Particle {
-            id: affected_particle.id,
-            mass,
-            position: affected_particle.position,
-            speed,
-        }
-    };
-}
-
 pub fn apply_force(particles: &[Particle; POP_SIZE]) -> Population {
-    let mut computed_particles = particles.clone();
-    for (affected_particle_index, affected_particle) in particles.iter().enumerate() {
-        // For some reasons, buffering acceleration into an array instead of writing directly into computed_particle significantly improves perf
-        let mut acceleration: Coordinates = DEFAULT_COORDINATES;
-        for affecting_particle in particles {
-            if affected_particle.id == affecting_particle.id {
-                continue;
-            }
-            let distance = distance(affected_particle.position, affecting_particle.position);
-            let force_by_mass = G * affecting_particle.mass / (distance * distance);
-            for i in 0..DIMENSIONS {
-                acceleration[i] += force_by_mass
-                    * ((affecting_particle.position[i] - affected_particle.position[i]) / distance);
-            }
-        }
-        for i in 0..DIMENSIONS {
-            computed_particles[affected_particle_index].position[i] += affected_particle.speed[i];
-            computed_particles[affected_particle_index].speed[i] += acceleration[i];
-        }
-    }
-    return computed_particles;
-}
-
-pub fn apply_force_2(particles: &[Particle; POP_SIZE]) -> Population {
     let mut computed_particles = particles.clone();
     for particle_a_index in 0..POP_SIZE {
         let particle_a = &particles[particle_a_index];

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use piston_window::{
-    clear, ellipse, text, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow,
-    Transformed, WindowSettings,
+    clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow,
+    WindowSettings,
 };
 use rand::{thread_rng, Rng};
 
-use crate::physics::{apply_force, apply_force_2, Particle, Population};
+use crate::physics::{apply_force, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -60,7 +60,7 @@ impl Engine {
             clear([0.0, 0.0, 0.0, 1.0], graphics);
             // self.graphical_coordinates_calculator.must_clear_screen = false;
         }
-        for particle in &self.particles {
+        for (index, particle) in self.particles.iter().enumerate() {
             if particle.mass == 0f64 {
                 continue;
             }
@@ -69,7 +69,7 @@ impl Engine {
                 .compute_graphical_coordinates(&particle);
             let color = self
                 .graphical_coordinates_calculator
-                .get_particle_color(particle.id);
+                .get_particle_color(index as u64);
             ellipse(
                 [color[0] as f32, color[1] as f32, color[2] as f32, 1.0],
                 graphical_coordinates,
@@ -80,8 +80,7 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        // self.particles = apply_force(&self.particles)
-        self.particles = apply_force_2(&self.particles)
+        self.particles = apply_force(&self.particles)
     }
 }
 
@@ -95,9 +94,9 @@ pub fn run() {
     window.set_max_fps(60);
     window.set_ups(60);
 
-    let mut glyphs = window
-        .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
-        .unwrap();
+    // let mut glyphs = window
+    //     .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
+    //     .unwrap();
 
     let mut engine = Engine {
         // particles: Particle::new_test_pop(),
