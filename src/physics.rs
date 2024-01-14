@@ -9,7 +9,7 @@ const DEFAULT_COORDINATES: Coordinates = [0f64; DIMENSIONS];
 
 pub const POP_SIZE: usize = 1000;
 
-const G: f64 = 1f64;
+const G: f64 = 0.005f64;
 const MINIMAL_DISTANCE: f64 = 3f64;
 
 const DEFAULT_PARTICLE: Particle = Particle {
@@ -60,8 +60,8 @@ impl Particle {
                 position[i] = rng.gen();
             }
             pop[i] = Self {
-                mass: rng.gen_range(1f64..10f64),
-                speed: [0f64; DIMENSIONS],
+                mass: rng.gen_range(10f64..100f64),
+                speed: DEFAULT_COORDINATES,
                 position,
             };
         }
