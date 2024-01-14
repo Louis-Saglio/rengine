@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
 
 use piston_window::{clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, text, Transformed};
 use rand::{thread_rng, Rng};
@@ -15,7 +14,7 @@ struct GraphicalCoordinatesCalculator {
 
 impl GraphicalCoordinatesCalculator {
     fn compute_graphical_coordinates(&self, particle: &Particle) -> [f64; 4] {
-        let size = [particle.mass.sqrt() * 2f64, particle.mass.sqrt() * 2f64];
+        let size = [particle.mass.sqrt() * 0.5f64, particle.mass.sqrt() * 0.5f64];
         let mut coordinates = [particle.position[0], particle.position[1]];
         // Zoom
         coordinates[0] *= self.zoom_level;
@@ -93,7 +92,7 @@ pub fn run() {
     window.set_ups(60);
 
     let mut glyphs = window
-        .load_font("/usr/share/fonts/truetype/malayalam/Suruma.ttf")
+        .load_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf")
         .unwrap();
 
     let mut engine = Engine {
