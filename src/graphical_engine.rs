@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use piston_window::{clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, text, Transformed};
+use piston_window::{clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, text, Transformed, Button, Key};
 use rand::{thread_rng, Rng};
 
 use crate::physics::{apply_force, Particle, Population};
@@ -8,13 +8,14 @@ use crate::physics::{apply_force, Particle, Population};
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
     zoom_level: f64,
+    shift: [f64; 2],
     must_clear_screen: bool,
     color_by_particle_id: HashMap<u64, [f64; 3]>,
 }
 
 impl GraphicalCoordinatesCalculator {
     fn compute_graphical_coordinates(&self, particle: &Particle) -> [f64; 4] {
-        let size = [particle.mass.sqrt() * 0.5f64, particle.mass.sqrt() * 0.5f64];
+        let size = [particle.mass.sqrt() * 0.5f64; 2];
         let mut coordinates = [particle.position[0], particle.position[1]];
         // Zoom
         coordinates[0] *= self.zoom_level;
@@ -22,6 +23,9 @@ impl GraphicalCoordinatesCalculator {
         // Move point 0,0 in the middle of the screen
         coordinates[0] += (self.window_size[0] / 2) as f64;
         coordinates[1] += (self.window_size[1] / 2) as f64;
+        // Shift the window
+        coordinates[0] += self.shift[0] * 10f64;
+        coordinates[1] += self.shift[1] * 10f64;
         // The graphical coordinates is the top left corner of the box around the ellipse
         coordinates[0] -= size[0] / 2f64;
         coordinates[1] -= size[1] / 2f64;
@@ -101,6 +105,7 @@ pub fn run() {
         graphical_coordinates_calculator: GraphicalCoordinatesCalculator {
             window_size: [width, height],
             zoom_level: 1f64,
+            shift: [0f64; 2],
             must_clear_screen: true,
             color_by_particle_id: HashMap::new(),
         },
@@ -110,6 +115,28 @@ pub fn run() {
         match event {
             Event::Input(Input::Move(Motion::MouseScroll(scroll)), _) => {
                 engine.graphical_coordinates_calculator.zoom(scroll[1])
+            }
+            Event::Input(Input::Button(button_args), _) => {
+                match button_args.button {
+                    Button::Keyboard(key) => {
+                        match key {
+                            Key::Right => {
+                                engine.graphical_coordinates_calculator.shift[0] += 1f64;
+                            }
+                            Key::Left => {
+                                engine.graphical_coordinates_calculator.shift[0] -= 1f64;
+                            }
+                            Key::Down => {
+                                engine.graphical_coordinates_calculator.shift[1] += 1f64;
+                            }
+                            Key::Up => {
+                                engine.graphical_coordinates_calculator.shift[1] -= 1f64;
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
             }
             Event::Loop(Loop::Render(_)) => {
                 let nbr = engine.particles.iter().filter(|&particle| particle.mass != 0f64).count();
