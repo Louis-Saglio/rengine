@@ -1,6 +1,6 @@
-use array_init::array_init;
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hash, Hasher};
+use std::mem::{transmute_copy, MaybeUninit};
 
 const STACK_HASH_MAP_SIZE: usize = 100;
 
@@ -9,11 +9,25 @@ pub struct StackHashMap<K, V> {
     hasher_builder: RandomState,
 }
 
+
+
 impl<K: Hash + Eq, V> StackHashMap<K, V> {
     pub fn new() -> Self {
         StackHashMap {
-            buckets: array_init(|_| array_init(|_| None)),
             hasher_builder: RandomState::new(),
+            buckets: unsafe {
+                let mut buckets: [[MaybeUninit<Option<(K, V)>>; STACK_HASH_MAP_SIZE];
+                    STACK_HASH_MAP_SIZE] = MaybeUninit::uninit().assume_init();
+                for slot in buckets.iter_mut() {
+                    let mut bucket: [MaybeUninit<Option<(K, V)>>; STACK_HASH_MAP_SIZE] =
+                        MaybeUninit::uninit().assume_init();
+                    for inner_slot in bucket.iter_mut() {
+                        *inner_slot = MaybeUninit::new(None);
+                    }
+                    *slot = bucket;
+                }
+                transmute_copy(&buckets)
+            },
         }
     }
 
