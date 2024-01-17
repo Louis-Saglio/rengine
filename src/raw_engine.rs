@@ -10,14 +10,8 @@ pub fn run(particles: Population, iterations: u64) {
     }
     let duration = start.elapsed();
     println!("Total time elapsed is: {:?}", duration);
-    println!(
-        "Microsec per update: {:?}",
-        duration.as_micros() / iterations as u128
-    );
+    println!("Microsec per update: {:?}", duration.as_micros() / iterations as u128);
     if duration.as_millis() > 0 {
-        println!(
-            "UPS: {:?}",
-            (iterations * 1000) / duration.as_millis() as u64
-        );
+        println!("UPS: {:?}", (iterations * 1000) / duration.as_millis() as u64);
     }
 }
