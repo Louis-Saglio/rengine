@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use piston_window::{clear, ellipse, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, WindowSettings, text, Transformed, Button, Key};
+use piston_window::{clear, ellipse, text, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, Transformed, WindowSettings, Button, Key};
 use rand::{thread_rng, Rng};
 
 use crate::physics::{apply_force, Particle, Population};
@@ -68,9 +68,7 @@ impl Engine {
             let graphical_coordinates = self
                 .graphical_coordinates_calculator
                 .compute_graphical_coordinates(&particle);
-            let color = self
-                .graphical_coordinates_calculator
-                .get_particle_color(index as u64);
+            let color = self.graphical_coordinates_calculator.get_particle_color(index as u64);
             ellipse(
                 [color[0] as f32, color[1] as f32, color[2] as f32, 1.0],
                 graphical_coordinates,
@@ -139,7 +137,11 @@ pub fn run() {
                 }
             }
             Event::Loop(Loop::Render(_)) => {
-                let nbr = engine.particles.iter().filter(|&particle| particle.mass != 0f64).count();
+                let nbr = engine
+                    .particles
+                    .iter()
+                    .filter(|&particle| particle.mass != 0f64)
+                    .count();
                 window.draw_2d(&event, |context, graphics, _device| {
                     engine.render(context, graphics);
                     text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)

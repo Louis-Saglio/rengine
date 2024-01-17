@@ -126,10 +126,8 @@ pub fn apply_force(particles: &[Particle; POP_SIZE]) -> Population {
             let force_by_mass_b_by_distance = particle_a.mass * g_by_d_cubed;
             for i in 0..DIMENSIONS {
                 let direction = particle_b.position[i] - particle_a.position[i];
-                computed_particles[particle_a_index].speed[i] +=
-                    direction * force_by_mass_a_by_distance;
-                computed_particles[particle_b_index].speed[i] -=
-                    direction * force_by_mass_b_by_distance;
+                computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a_by_distance;
+                computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b_by_distance;
             }
             if distance < MINIMAL_DISTANCE {
                 to_merge.push((particle_a_index, particle_b_index));
@@ -148,8 +146,7 @@ pub fn apply_force(particles: &[Particle; POP_SIZE]) -> Population {
         computed_particles[particle_a_index].mass = 0f64;
         computed_particles[particle_b_index].mass += particle_a.mass;
         for i in 0..DIMENSIONS {
-            computed_particles[particle_b_index].position[i] = (particle_a.position[i]
-                * particle_a.mass
+            computed_particles[particle_b_index].position[i] = (particle_a.position[i] * particle_a.mass
                 + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass);
             computed_particles[particle_b_index].speed[i] = (particle_a.speed[i] * particle_a.mass
