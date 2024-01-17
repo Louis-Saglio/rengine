@@ -9,15 +9,13 @@ pub struct StackHashMap<K, V> {
     hasher_builder: RandomState,
 }
 
-
-
 impl<K: Hash + Eq, V> StackHashMap<K, V> {
     pub fn new() -> Self {
         StackHashMap {
             hasher_builder: RandomState::new(),
             buckets: unsafe {
-                let mut buckets: [[MaybeUninit<Option<(K, V)>>; STACK_HASH_MAP_SIZE];
-                    STACK_HASH_MAP_SIZE] = MaybeUninit::uninit().assume_init();
+                let mut buckets: [[MaybeUninit<Option<(K, V)>>; STACK_HASH_MAP_SIZE]; STACK_HASH_MAP_SIZE] =
+                    MaybeUninit::uninit().assume_init();
                 for slot in buckets.iter_mut() {
                     let mut bucket: [MaybeUninit<Option<(K, V)>>; STACK_HASH_MAP_SIZE] =
                         MaybeUninit::uninit().assume_init();
