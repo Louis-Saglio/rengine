@@ -8,3 +8,10 @@ edition = "2021"
 [dependencies]
 piston_window = "0.131.0"
 rand = "0.8.5"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = "symbols"
