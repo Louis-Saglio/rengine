@@ -1,5 +1,4 @@
 use rengine::graphical_engine;
-use rengine::physics::Particle;
 use rengine::raw_engine;
 
 fn main() {
