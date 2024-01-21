@@ -1,7 +1,10 @@
-use rengine::graphical_engine;
-use rengine::raw_engine;
-
 fn main() {
+    use rengine::graphical_engine;
     graphical_engine::run();
-    // raw_engine::run(Particle::new_random_pop(), 10000);
 }
+
+// fn main() {
+//     use rengine::raw_engine;
+//     use rengine::physics::Particle;
+//     raw_engine::run(Particle::new_random_pop(), 10000);
+// }

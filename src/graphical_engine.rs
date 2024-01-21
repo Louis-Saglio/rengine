@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use piston_window::{clear, ellipse, text, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, Transformed, WindowSettings, Button, Key};
 use rand::{thread_rng, Rng};
 
-use crate::physics::{apply_force, Particle, Population};
+use crate::physics::{apply_force, apply_force_multi_threaded, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -79,7 +79,8 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        self.particles = apply_force(&self.particles)
+        // self.particles = apply_force(&self.particles)
+        self.particles = apply_force_multi_threaded(&self.particles);
     }
 }
 
