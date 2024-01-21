@@ -1,5 +1,6 @@
 // Responsible for defining newtonian physic
 
+use std::thread;
 use rand::Rng;
 
 pub const DIMENSIONS: usize = 2;
@@ -166,7 +167,7 @@ pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
 pub fn compute_acceleration_for_particle_pairs(
     particles: &Population,
     pairs: &[Option<(usize, usize)>],
-) -> [[f64; DIMENSIONS]; POP_SIZE] {
+) -> [Coordinates; POP_SIZE] {
     let mut acceleration = [[0f64; DIMENSIONS]; POP_SIZE];
     for optional_pair in pairs {
         match optional_pair {
@@ -213,11 +214,22 @@ pub fn accelerate_particles_from_acceleration_buckets(
 }
 
 pub fn apply_force_multi_threaded(particles: &Population) -> Population {
+    let particles= particles.clone();
     let mut acceleration_buckets: AccelerationBuckets = [[DEFAULT_COORDINATES; POP_SIZE]; WORKER_NBR];
-    for (i, chunk) in POSSIBLE_PARTICLE_PAIRS_CHUNKS.iter().enumerate() {
-        acceleration_buckets[i] = compute_acceleration_for_particle_pairs(particles, chunk);
+    let threads = (0..WORKER_NBR).map(|i| {
+        thread::spawn(move || {
+            compute_acceleration_for_particle_pairs(&particles.clone(), &POSSIBLE_PARTICLE_PAIRS_CHUNKS[i])
+        })
+    });
+    for (i, thread) in threads.into_iter().enumerate() {
+        match thread.join() {
+            Ok(acceleration_bucket) => {
+                acceleration_buckets[i] = acceleration_bucket;
+            }
+            Err(_) => {}
+        }
     }
-    return accelerate_particles_from_acceleration_buckets(particles, acceleration_buckets);
+    return accelerate_particles_from_acceleration_buckets(&particles, acceleration_buckets);
 }
 
 pub fn apply_force_by_iterating_over_possible_particle_pairs(particles: &Population) -> Population {
