@@ -51,33 +51,28 @@ const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_P
 
 pub const POSSIBLE_PARTICLE_PAIRS: [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] = compute_possible_particle_pairs();
 
-const CHUNK_SIZE: usize = (NBR_OF_POSSIBLE_PARTICLE_PAIRS / WORKER_NBR) + 1;
+const CHUNK_SIZE: usize = (NBR_OF_POSSIBLE_PARTICLE_PAIRS / WORKER_NBR) + if NBR_OF_POSSIBLE_PARTICLE_PAIRS % WORKER_NBR == 0 { 0 } else { 1 };
 
 type Chunk = [Option<(usize, usize)>; CHUNK_SIZE];
 
 type Chunks = [Chunk; WORKER_NBR];
 
-const fn compute_chunks() -> Chunks {
+pub const fn compute_chunks() -> Chunks {
     let mut chunks = [[None; CHUNK_SIZE]; WORKER_NBR];
-    let mut chunk_index = 0;
-    let mut chunk_item_index = 0;
     let mut pair_index = 0;
-    let mut nbr_of_pair_in_chunk = 0;
+    let mut chunk_index = 0;
+    let mut index_in_chunk = 0;
     loop {
         if pair_index == NBR_OF_POSSIBLE_PARTICLE_PAIRS { break }
-        if nbr_of_pair_in_chunk == CHUNK_SIZE {
-            chunk_index += 1;
-            chunk_item_index = 0;
-        }
-        chunks[chunk_index][chunk_item_index] = Some(POSSIBLE_PARTICLE_PAIRS[pair_index]);
-        nbr_of_pair_in_chunk += 1;
-        chunk_item_index += 1;
+        if chunk_index == WORKER_NBR { chunk_index = 0; index_in_chunk += 1; }
+        chunks[chunk_index][index_in_chunk] = Some(POSSIBLE_PARTICLE_PAIRS[pair_index]);
         pair_index += 1;
+        chunk_index += 1;
     }
     return chunks;
 }
 
-const POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
+// const POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
 
 type AccelerationBucket = [Coordinates; POP_SIZE];
 type AccelerationBuckets = [AccelerationBucket; WORKER_NBR];
@@ -216,9 +211,10 @@ pub fn accelerate_particles_from_acceleration_buckets(
 pub fn apply_force_multi_threaded(particles: &Population) -> Population {
     let particles= particles.clone();
     let mut acceleration_buckets: AccelerationBuckets = [[DEFAULT_COORDINATES; POP_SIZE]; WORKER_NBR];
+    let pppc = compute_chunks();
     let threads = (0..WORKER_NBR).map(|i| {
         thread::spawn(move || {
-            compute_acceleration_for_particle_pairs(&particles.clone(), &POSSIBLE_PARTICLE_PAIRS_CHUNKS[i])
+            compute_acceleration_for_particle_pairs(&particles.clone(), &pppc[i])
         })
     });
     for (i, thread) in threads.into_iter().enumerate() {
