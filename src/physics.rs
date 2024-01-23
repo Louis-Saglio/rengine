@@ -151,12 +151,36 @@ impl Particle {
 }
 
 pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
-    let mut sum = 0.0;
-    for i in 0..DIMENSIONS {
-        let diff = a[i] - b[i];
-        sum += diff * diff;
+    if DIMENSIONS == 2 {
+        let diff0 = a[0] - b[0];
+        let diff1 = a[1] - b[1];
+        (diff0 * diff0 + diff1 * diff1).sqrt()
+    } else if DIMENSIONS == 3 {
+        let diff0 = a[0] - b[0];
+        let diff1 = a[1] - b[1];
+        let diff2 = a[2] - b[2];
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2).sqrt()
+    } else if DIMENSIONS == 4 {
+        let diff0 = a[0] - b[0];
+        let diff1 = a[1] - b[1];
+        let diff2 = a[2] - b[2];
+        let diff3 = a[3] - b[3];
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3).sqrt()
+    } else if DIMENSIONS == 5 {
+        let diff0 = a[0] - b[0];
+        let diff1 = a[1] - b[1];
+        let diff2 = a[2] - b[2];
+        let diff3 = a[3] - b[3];
+        let diff4 = a[4] - b[4];
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4).sqrt()
+    } else {
+        let mut sum = 0.0;
+        for i in 0..DIMENSIONS {
+            let diff = a[i] - b[i];
+            sum += diff * diff;
+        }
+        sum.sqrt()
     }
-    sum.sqrt()
 }
 
 pub fn compute_acceleration_for_particle_pairs(
