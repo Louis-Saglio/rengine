@@ -12,6 +12,7 @@ pub const POP_SIZE: usize = 1000;
 
 const G: f64 = 0.005f64;
 const MINIMAL_DISTANCE: f64 = 3f64;
+const MINIMAL_DISTANCE_SQUARED: f64 = MINIMAL_DISTANCE * MINIMAL_DISTANCE;
 
 const DEFAULT_PARTICLE: Particle = Particle {
     mass: 0f64,
@@ -140,47 +141,45 @@ impl Particle {
     //             speed: DEFAULT_COORDINATES,
     //             position: [-100f64, -100f64],
     //         },
-    //         // Particle {
-    //         //     mass: 10f64,
-    //         //     id: 3,
-    //         //     speed: DEFAULT_COORDINATES,
-    //         //     position: [-100f64, 100f64],
-    //         // },
     //     ];
     // }
 }
 
-pub fn distance(a: Coordinates, b: Coordinates) -> f64 {
+pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
     if DIMENSIONS == 2 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
-        (diff0 * diff0 + diff1 * diff1).sqrt()
+        (diff0 * diff0 + diff1 * diff1)
     } else if DIMENSIONS == 3 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2).sqrt()
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2)
     } else if DIMENSIONS == 4 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
         let diff3 = a[3] - b[3];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3).sqrt()
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3)
     } else if DIMENSIONS == 5 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
         let diff3 = a[3] - b[3];
         let diff4 = a[4] - b[4];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4).sqrt()
+        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4)
     } else {
         let mut sum = 0.0;
         for i in 0..DIMENSIONS {
             let diff = a[i] - b[i];
             sum += diff * diff;
         }
-        sum.sqrt()
+        sum
     }
+}
+
+fn distance(a: Coordinates, b: Coordinates) -> f64 {
+    return distance_squared(a, b).sqrt()
 }
 
 pub fn compute_acceleration_for_particle_pairs(
@@ -278,6 +277,11 @@ pub fn apply_force_by_iterating_over_possible_particle_pairs(particles: &Populat
     return computed_particles;
 }
 
+// fn fast_inverse_square_root(number: f64) -> f64 {
+//     let j = (0x5f3759df - (number as u64 >> 1)) as f64;
+//     j * (1.5 - 0.5 * number * j * j)
+// }
+
 pub fn apply_force(particles: &Population) -> Population {
     let mut computed_particles = particles.clone();
     let mut to_merge: Vec<(usize, usize)> = Vec::new();
@@ -291,16 +295,17 @@ pub fn apply_force(particles: &Population) -> Population {
             if particle_b.mass == 0f64 {
                 continue;
             }
-            let distance = distance(particle_a.position, particle_b.position);
-            let g_by_d_cubed = G / (distance * distance * distance);
-            let force_by_mass_a_by_distance = particle_b.mass * g_by_d_cubed;
-            let force_by_mass_b_by_distance = particle_a.mass * g_by_d_cubed;
+            let distance_squared = distance_squared(particle_a.position, particle_b.position);
+            let g_by_d_squared = G / (distance_squared);
+            let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
+            let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
+            let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
             for i in 0..DIMENSIONS {
                 let direction = particle_b.position[i] - particle_a.position[i];
-                computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a_by_distance;
-                computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b_by_distance;
+                computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a;
+                computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b;
             }
-            if distance < MINIMAL_DISTANCE {
+            if distance_squared < MINIMAL_DISTANCE_SQUARED {
                 to_merge.push((particle_a_index, particle_b_index));
             }
         }
