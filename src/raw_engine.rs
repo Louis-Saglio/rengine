@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::physics::{apply_force, apply_force_multi_threaded, Population};
+use crate::physics::{apply_force, Population};
 
 pub fn run(particles: Population, iterations: u64) {
     let mut particles = particles;

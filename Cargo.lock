@@ -668,6 +668,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "load_env_var_as_usize"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1216,6 +1224,7 @@ dependencies = [
 name = "rengine"
 version = "0.1.0"
 dependencies = [
+ "load_env_var_as_usize",
  "piston_window",
  "rand",
 ]
