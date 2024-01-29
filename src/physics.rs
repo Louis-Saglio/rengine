@@ -1,8 +1,11 @@
 // Responsible for defining newtonian physic
 
-use std::thread;
+use load_env_var_as_usize::{
+    get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
+    get_worker_nbr_from_env_var,
+};
 use rand::Rng;
-use load_env_var_as_usize::{get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var, get_worker_nbr_from_env_var};
+use std::thread;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
 
@@ -55,7 +58,12 @@ const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_P
 
 pub const POSSIBLE_PARTICLE_PAIRS: [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] = compute_possible_particle_pairs();
 
-const CHUNK_SIZE: usize = (NBR_OF_POSSIBLE_PARTICLE_PAIRS / WORKER_NBR) + if NBR_OF_POSSIBLE_PARTICLE_PAIRS % WORKER_NBR == 0 { 0 } else { 1 };
+const CHUNK_SIZE: usize = (NBR_OF_POSSIBLE_PARTICLE_PAIRS / WORKER_NBR)
+    + if NBR_OF_POSSIBLE_PARTICLE_PAIRS % WORKER_NBR == 0 {
+        0
+    } else {
+        1
+    };
 
 type Chunk = [Option<(usize, usize)>; CHUNK_SIZE];
 
@@ -67,8 +75,13 @@ pub const fn compute_chunks() -> Chunks {
     let mut chunk_index = 0;
     let mut index_in_chunk = 0;
     loop {
-        if pair_index == NBR_OF_POSSIBLE_PARTICLE_PAIRS { break }
-        if chunk_index == WORKER_NBR { chunk_index = 0; index_in_chunk += 1; }
+        if pair_index == NBR_OF_POSSIBLE_PARTICLE_PAIRS {
+            break;
+        }
+        if chunk_index == WORKER_NBR {
+            chunk_index = 0;
+            index_in_chunk += 1;
+        }
         chunks[chunk_index][index_in_chunk] = Some(POSSIBLE_PARTICLE_PAIRS[pair_index]);
         pair_index += 1;
         chunk_index += 1;
@@ -131,21 +144,38 @@ impl Particle {
         let mut pop = DEFAULT_POP.clone();
         if POP_SIZE < 3 {
             panic!("POP_SIZE must be 3 for test")
+        } else if DIMENSIONS != 2 {
+            panic!("DIMENSIONS must be 2 for test")
         } else {
             pop[0] = Particle {
                 mass: 15f64,
                 speed: DEFAULT_COORDINATES,
-                position: [100f64, 100f64],
+                position: {
+                    let mut position = DEFAULT_COORDINATES;
+                    position[0] = 100f64;
+                    position[1] = 100f64;
+                    position
+                },
             };
             pop[1] = Particle {
                 mass: 10f64,
                 speed: DEFAULT_COORDINATES,
-                position: [100f64, -100f64],
+                position: {
+                    let mut position = DEFAULT_COORDINATES;
+                    position[0] = 100f64;
+                    position[1] = -100f64;
+                    position
+                },
             };
             pop[2] = Particle {
                 mass: 10f64,
                 speed: DEFAULT_COORDINATES,
-                position: [-100f64, -100f64],
+                position: {
+                    let mut position = DEFAULT_COORDINATES;
+                    position[0] = -100f64;
+                    position[1] = -100f64;
+                    position
+                },
             }
         }
         return pop;
@@ -156,25 +186,25 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
     if DIMENSIONS == 2 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
-        (diff0 * diff0 + diff1 * diff1)
+        diff0 * diff0 + diff1 * diff1
     } else if DIMENSIONS == 3 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2)
+        diff0 * diff0 + diff1 * diff1 + diff2 * diff2
     } else if DIMENSIONS == 4 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
         let diff3 = a[3] - b[3];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3)
+        diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3
     } else if DIMENSIONS == 5 {
         let diff0 = a[0] - b[0];
         let diff1 = a[1] - b[1];
         let diff2 = a[2] - b[2];
         let diff3 = a[3] - b[3];
         let diff4 = a[4] - b[4];
-        (diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4)
+        diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4
     } else {
         let mut sum = 0.0;
         for i in 0..DIMENSIONS {
@@ -186,7 +216,7 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
 }
 
 fn distance(a: Coordinates, b: Coordinates) -> f64 {
-    return distance_squared(a, b).sqrt()
+    return distance_squared(a, b).sqrt();
 }
 
 pub fn compute_acceleration_for_particle_pairs(
@@ -196,7 +226,7 @@ pub fn compute_acceleration_for_particle_pairs(
     let mut acceleration = [[0f64; DIMENSIONS]; POP_SIZE];
     for optional_pair in pairs {
         match optional_pair {
-            None => {},
+            None => {}
             Some((particle_a_index, particle_b_index)) => {
                 let particle_a = &particles[*particle_a_index];
                 let particle_b = &particles[*particle_b_index];
@@ -239,14 +269,11 @@ pub fn accelerate_particles_from_acceleration_buckets(
 }
 
 pub fn apply_force_multi_threaded(particles: &Population) -> Population {
-    let particles= particles.clone();
+    let particles = particles.clone();
     let mut acceleration_buckets: AccelerationBuckets = [[DEFAULT_COORDINATES; POP_SIZE]; WORKER_NBR];
     let pppc = compute_chunks();
-    let threads = (0..WORKER_NBR).map(|i| {
-        thread::spawn(move || {
-            compute_acceleration_for_particle_pairs(&particles.clone(), &pppc[i])
-        })
-    });
+    let threads = (0..WORKER_NBR)
+        .map(|i| thread::spawn(move || compute_acceleration_for_particle_pairs(&particles.clone(), &pppc[i])));
     for (i, thread) in threads.into_iter().enumerate() {
         match thread.join() {
             Ok(acceleration_bucket) => {
