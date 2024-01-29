@@ -1,9 +1,13 @@
 use std::collections::HashMap;
 
-use piston_window::{clear, ellipse, text, Context, Event, EventLoop, G2d, Input, Loop, Motion, PistonWindow, Transformed, WindowSettings, Button, Key};
+use piston_window::{
+    clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
+    WindowSettings,
+};
 use rand::{thread_rng, Rng};
+use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 
-use crate::physics::{apply_force, apply_force_multi_threaded, Particle, Population};
+use crate::physics::{apply_force, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -79,8 +83,7 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        // self.particles = apply_force(&self.particles)
-        self.particles = apply_force_multi_threaded(&self.particles);
+        self.particles = apply_force(&self.particles);
     }
 }
 
@@ -98,9 +101,16 @@ pub fn run() {
         .load_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf")
         .unwrap();
 
+    let particles = if BUILD_VARIANT == TEST_BV {
+        Particle::new_test_pop()
+    } else if BUILD_VARIANT == DEMO_BV {
+        Particle::new_random_pop_in_screen(width, height)
+    } else {
+        Particle::new_random_pop()
+    };
+
     let mut engine = Engine {
-        // particles: Particle::new_test_pop(),
-        particles: Particle::new_random_pop_in_screen(width, height),
+        particles,
         graphical_coordinates_calculator: GraphicalCoordinatesCalculator {
             window_size: [width, height],
             zoom_level: 1f64,
@@ -115,28 +125,24 @@ pub fn run() {
             Event::Input(Input::Move(Motion::MouseScroll(scroll)), _) => {
                 engine.graphical_coordinates_calculator.zoom(scroll[1])
             }
-            Event::Input(Input::Button(button_args), _) => {
-                match button_args.button {
-                    Button::Keyboard(key) => {
-                        match key {
-                            Key::Right => {
-                                engine.graphical_coordinates_calculator.shift[0] += 1f64;
-                            }
-                            Key::Left => {
-                                engine.graphical_coordinates_calculator.shift[0] -= 1f64;
-                            }
-                            Key::Down => {
-                                engine.graphical_coordinates_calculator.shift[1] += 1f64;
-                            }
-                            Key::Up => {
-                                engine.graphical_coordinates_calculator.shift[1] -= 1f64;
-                            }
-                            _ => {}
-                        }
+            Event::Input(Input::Button(button_args), _) => match button_args.button {
+                Button::Keyboard(key) => match key {
+                    Key::Right => {
+                        engine.graphical_coordinates_calculator.shift[0] += 1f64;
+                    }
+                    Key::Left => {
+                        engine.graphical_coordinates_calculator.shift[0] -= 1f64;
+                    }
+                    Key::Down => {
+                        engine.graphical_coordinates_calculator.shift[1] += 1f64;
+                    }
+                    Key::Up => {
+                        engine.graphical_coordinates_calculator.shift[1] -= 1f64;
                     }
                     _ => {}
-                }
-            }
+                },
+                _ => {}
+            },
             Event::Loop(Loop::Render(_)) => {
                 let nbr = engine
                     .particles
