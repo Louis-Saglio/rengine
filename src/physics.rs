@@ -2,16 +2,19 @@
 
 use std::thread;
 use rand::Rng;
+use load_env_var_as_usize::{get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var, get_worker_nbr_from_env_var};
 
-pub const DIMENSIONS: usize = 2;
+pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
+
 type Coordinates = [f64; DIMENSIONS];
 
 const DEFAULT_COORDINATES: Coordinates = [0f64; DIMENSIONS];
 
-pub const POP_SIZE: usize = 1000;
+pub const POP_SIZE: usize = get_pop_size_from_env_var!();
 
-const G: f64 = 0.005f64;
-const MINIMAL_DISTANCE: f64 = 3f64;
+pub const G: f64 = get_g_from_env_var!();
+
+pub const MINIMAL_DISTANCE: f64 = get_minimal_distance_from_env_var!();
 const MINIMAL_DISTANCE_SQUARED: f64 = MINIMAL_DISTANCE * MINIMAL_DISTANCE;
 
 const DEFAULT_PARTICLE: Particle = Particle {
@@ -26,7 +29,7 @@ const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
 
 const NBR_OF_POSSIBLE_PARTICLE_PAIRS: usize = (POP_SIZE as f64 * ((POP_SIZE - 1) as f64 / 2f64)) as usize;
 
-const WORKER_NBR: usize = 2;
+pub const WORKER_NBR: usize = get_worker_nbr_from_env_var!();
 
 const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] {
     let mut combinations = [(0, 0); NBR_OF_POSSIBLE_PARTICLE_PAIRS];
@@ -124,25 +127,29 @@ impl Particle {
         return pop;
     }
 
-    // pub fn new_test_pop() -> Population {
-    //     return [
-    //         Particle {
-    //             mass: 15f64,
-    //             speed: DEFAULT_COORDINATES,
-    //             position: [100f64, 100f64],
-    //         },
-    //         Particle {
-    //             mass: 10f64,
-    //             speed: DEFAULT_COORDINATES,
-    //             position: [100f64, -100f64],
-    //         },
-    //         Particle {
-    //             mass: 10f64,
-    //             speed: DEFAULT_COORDINATES,
-    //             position: [-100f64, -100f64],
-    //         },
-    //     ];
-    // }
+    pub fn new_test_pop() -> Population {
+        let mut pop = DEFAULT_POP.clone();
+        if POP_SIZE < 3 {
+            panic!("POP_SIZE must be 3 for test")
+        } else {
+            pop[0] = Particle {
+                mass: 15f64,
+                speed: DEFAULT_COORDINATES,
+                position: [100f64, 100f64],
+            };
+            pop[1] = Particle {
+                mass: 10f64,
+                speed: DEFAULT_COORDINATES,
+                position: [100f64, -100f64],
+            };
+            pop[2] = Particle {
+                mass: 10f64,
+                speed: DEFAULT_COORDINATES,
+                position: [-100f64, -100f64],
+            }
+        }
+        return pop;
+    }
 }
 
 pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
@@ -276,11 +283,6 @@ pub fn apply_force_by_iterating_over_possible_particle_pairs(particles: &Populat
     }
     return computed_particles;
 }
-
-// fn fast_inverse_square_root(number: f64) -> f64 {
-//     let j = (0x5f3759df - (number as u64 >> 1)) as f64;
-//     j * (1.5 - 0.5 * number * j * j)
-// }
 
 pub fn apply_force(particles: &Population) -> Population {
     let mut computed_particles = particles.clone();
