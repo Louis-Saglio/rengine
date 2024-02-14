@@ -1,5 +1,7 @@
 // Responsible for defining newtonian physic
 
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
 use load_env_var_as_usize::{
     get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
     get_worker_nbr_from_env_var,
@@ -357,6 +359,59 @@ pub fn apply_force(particles: &Population) -> Population {
             computed_particles[particle_b_index].speed[i] = (particle_a.speed[i] * particle_a.mass
                 + particle_b.speed[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
+        }
+    }
+    return computed_particles;
+}
+
+
+pub fn compute_acceleration_in_worker(particles: &Population, receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>, sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>) {
+    loop {
+        let (particle_a_index, particle_b_index) = receiver_from_main_thread.lock().unwrap().recv().unwrap();
+        let particle_a = &particles[particle_a_index];
+        let particle_b = &particles[particle_b_index];
+        let mut acceleration_a = DEFAULT_COORDINATES;
+        let mut acceleration_b = DEFAULT_COORDINATES;
+        let distance_squared = distance_squared(particle_a.position, particle_b.position);
+        let g_by_d_squared = G / (distance_squared);
+        let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
+        let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
+        let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
+        for i in 0..DIMENSIONS {
+            let direction = particle_b.position[i] - particle_a.position[i];
+            acceleration_a[i] += direction * force_by_mass_a;
+            acceleration_b[i] -= direction * force_by_mass_b;
+        }
+        let _ = sender_to_main_thread.send(((particle_a_index, acceleration_a), (particle_b_index, acceleration_b)));
+    }
+}
+
+
+pub fn apply_force_with_workers(particles: &Population, sender_to_workers: &Sender<(usize, usize)>, receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>) -> Population {
+    let mut computed_particles = particles.clone();
+    for particle_a_index in 0..POP_SIZE {
+        let particle_a = &particles[particle_a_index];
+        if particles[particle_a_index].mass == 0f64 {
+            continue;
+        }
+        for particle_b_index in particle_a_index + 1..POP_SIZE {
+            if particles[particle_b_index].mass == 0f64 {
+                continue;
+            }
+            let result = sender_to_workers.send((particle_a_index, particle_b_index));
+            if result.is_err() {
+                println!("Failed to send {:?} to workers", (particle_a_index, particle_b_index));
+            }
+        }
+        for i in 0..DIMENSIONS {
+            computed_particles[particle_a_index].position[i] += particle_a.speed[i];
+        }
+    }
+    for _ in 0..NBR_OF_POSSIBLE_PARTICLE_PAIRS {
+        let ((particle_a_index, particle_a_acc), (particle_b_index, particle_b_acc)) = receiver_from_workers.recv().unwrap();
+        for i in 0..DIMENSIONS {
+            computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
+            computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
         }
     }
     return computed_particles;

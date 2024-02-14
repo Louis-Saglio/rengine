@@ -8,12 +8,13 @@ struct DataToProcess {
     age: u8,
 }
 
-fn worker_main(data_to_process_receiver: Arc<Mutex<Receiver<DataToProcess>>>) {
-
+fn worker_main(data_to_process_receiver: Arc<Mutex<Receiver<DataToProcess>>>) -> u8 {
+    let data = data_to_process_receiver.lock().unwrap().recv().unwrap();
+    return data.age;
 }
 
 
-fn run() {
+pub fn run() {
     let (data_to_process_sender, data_to_process_receiver) = mpsc::channel();
     let data_to_process_receiver = Arc::new(Mutex::new(data_to_process_receiver));
     // Create workers
@@ -38,10 +39,14 @@ fn run() {
     // close workers
     drop(data_to_process_sender);
     // wait for workers
+    let mut results = vec![];
     for worker in workers {
-        worker.join();
+        let result = worker.join();
+        let b = result.unwrap();
+        results.push(b);
     }
     // collect workers output
 
     // display output
+    println!("{results:?}");
 }
