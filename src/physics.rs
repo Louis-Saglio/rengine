@@ -1,12 +1,12 @@
 // Responsible for defining newtonian physic
 
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{Receiver, Sender};
 use load_env_var_as_usize::{
     get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
     get_worker_nbr_from_env_var,
 };
 use rand::Rng;
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
@@ -364,8 +364,11 @@ pub fn apply_force(particles: &Population) -> Population {
     return computed_particles;
 }
 
-
-pub fn compute_acceleration_in_worker(particles: &Population, receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>, sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>) {
+pub fn compute_acceleration_in_worker(
+    particles: &Population,
+    receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>,
+    sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>,
+) {
     loop {
         let (particle_a_index, particle_b_index) = receiver_from_main_thread.lock().unwrap().recv().unwrap();
         let particle_a = &particles[particle_a_index];
@@ -386,8 +389,11 @@ pub fn compute_acceleration_in_worker(particles: &Population, receiver_from_main
     }
 }
 
-
-pub fn apply_force_with_workers(particles: &Population, sender_to_workers: &Sender<(usize, usize)>, receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>) -> Population {
+pub fn apply_force_with_workers(
+    particles: &Population,
+    sender_to_workers: &Sender<(usize, usize)>,
+    receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
+) -> Population {
     let mut computed_particles = particles.clone();
     for particle_a_index in 0..POP_SIZE {
         let particle_a = &particles[particle_a_index];
@@ -408,7 +414,8 @@ pub fn apply_force_with_workers(particles: &Population, sender_to_workers: &Send
         }
     }
     for _ in 0..NBR_OF_POSSIBLE_PARTICLE_PAIRS {
-        let ((particle_a_index, particle_a_acc), (particle_b_index, particle_b_acc)) = receiver_from_workers.recv().unwrap();
+        let ((particle_a_index, particle_a_acc), (particle_b_index, particle_b_acc)) =
+            receiver_from_workers.recv().unwrap();
         for i in 0..DIMENSIONS {
             computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
             computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
