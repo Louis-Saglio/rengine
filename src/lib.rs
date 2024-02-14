@@ -6,4 +6,4 @@ pub mod stack_hash_map;
 pub mod build_variant;
 
 pub mod workers;
-pub mod multi_threaded_engine;
+pub mod multi_threaded_raw_engine;
