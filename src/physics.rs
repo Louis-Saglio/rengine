@@ -92,6 +92,7 @@ pub const fn compute_chunks() -> Chunks {
 }
 
 // const POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
+static POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
 
 type AccelerationBucket = [Coordinates; POP_SIZE];
 type AccelerationBuckets = [AccelerationBucket; WORKER_NBR];
@@ -273,7 +274,7 @@ pub fn accelerate_particles_from_acceleration_buckets(
 pub fn apply_force_multi_threaded(particles: &Population) -> Population {
     let particles = particles.clone();
     let mut acceleration_buckets: AccelerationBuckets = [[DEFAULT_COORDINATES; POP_SIZE]; WORKER_NBR];
-    let pppc = compute_chunks();
+    let pppc = POSSIBLE_PARTICLE_PAIRS_CHUNKS;
     let threads = (0..WORKER_NBR)
         .map(|i| thread::spawn(move || compute_acceleration_for_particle_pairs(&particles.clone(), &pppc[i])));
     for (i, thread) in threads.into_iter().enumerate() {
