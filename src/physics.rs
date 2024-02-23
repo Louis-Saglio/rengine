@@ -1,13 +1,10 @@
 // Responsible for defining newtonian physic
 
+use rand::Rng;
+
 use load_env_var_as_usize::{
     get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
-    get_worker_nbr_from_env_var,
 };
-use rand::Rng;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
 
@@ -34,8 +31,6 @@ const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
 
 const NBR_OF_POSSIBLE_PARTICLE_PAIRS: usize = (POP_SIZE as f64 * ((POP_SIZE - 1) as f64 / 2f64)) as usize;
 
-pub const WORKER_NBR: usize = get_worker_nbr_from_env_var!();
-
 const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] {
     let mut combinations = [(0, 0); NBR_OF_POSSIBLE_PARTICLE_PAIRS];
     let mut i = 0;
@@ -59,43 +54,6 @@ const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_P
 }
 
 pub const POSSIBLE_PARTICLE_PAIRS: [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] = compute_possible_particle_pairs();
-
-const CHUNK_SIZE: usize = (NBR_OF_POSSIBLE_PARTICLE_PAIRS / WORKER_NBR)
-    + if NBR_OF_POSSIBLE_PARTICLE_PAIRS % WORKER_NBR == 0 {
-        0
-    } else {
-        1
-    };
-
-type Chunk = [Option<(usize, usize)>; CHUNK_SIZE];
-
-type Chunks = [Chunk; WORKER_NBR];
-
-pub const fn compute_chunks() -> Chunks {
-    let mut chunks = [[None; CHUNK_SIZE]; WORKER_NBR];
-    let mut pair_index = 0;
-    let mut chunk_index = 0;
-    let mut index_in_chunk = 0;
-    loop {
-        if pair_index == NBR_OF_POSSIBLE_PARTICLE_PAIRS {
-            break;
-        }
-        if chunk_index == WORKER_NBR {
-            chunk_index = 0;
-            index_in_chunk += 1;
-        }
-        chunks[chunk_index][index_in_chunk] = Some(POSSIBLE_PARTICLE_PAIRS[pair_index]);
-        pair_index += 1;
-        chunk_index += 1;
-    }
-    return chunks;
-}
-
-// const POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
-static POSSIBLE_PARTICLE_PAIRS_CHUNKS: [[Option<(usize, usize)>; CHUNK_SIZE]; WORKER_NBR] = compute_chunks();
-
-type AccelerationBucket = [Coordinates; POP_SIZE];
-type AccelerationBuckets = [AccelerationBucket; WORKER_NBR];
 
 #[derive(Clone, Copy)]
 pub struct Particle {
@@ -251,43 +209,6 @@ pub fn compute_acceleration_for_particle_pairs(
     return acceleration;
 }
 
-pub fn accelerate_particles_from_acceleration_buckets(
-    particles: &Population,
-    acceleration_buckets: AccelerationBuckets,
-) -> Population {
-    let mut computed_particles = particles.clone();
-    for particle_index in 0..POP_SIZE {
-        for i in 0..DIMENSIONS {
-            computed_particles[particle_index].position[i] += computed_particles[particle_index].speed[i]
-        }
-    }
-    for bucket in acceleration_buckets {
-        for (particle_index, acceleration) in bucket.iter().enumerate() {
-            for i in 0..DIMENSIONS {
-                computed_particles[particle_index].speed[i] += acceleration[i];
-            }
-        }
-    }
-    return computed_particles;
-}
-
-pub fn apply_force_multi_threaded(particles: &Population) -> Population {
-    let particles = particles.clone();
-    let mut acceleration_buckets: AccelerationBuckets = [[DEFAULT_COORDINATES; POP_SIZE]; WORKER_NBR];
-    let pppc = POSSIBLE_PARTICLE_PAIRS_CHUNKS;
-    let threads = (0..WORKER_NBR)
-        .map(|i| thread::spawn(move || compute_acceleration_for_particle_pairs(&particles.clone(), &pppc[i])));
-    for (i, thread) in threads.into_iter().enumerate() {
-        match thread.join() {
-            Ok(acceleration_bucket) => {
-                acceleration_buckets[i] = acceleration_bucket;
-            }
-            Err(_) => {}
-        }
-    }
-    return accelerate_particles_from_acceleration_buckets(&particles, acceleration_buckets);
-}
-
 pub fn apply_force_by_iterating_over_possible_particle_pairs(particles: &Population) -> Population {
     let mut computed_particles = particles.clone();
     for i in 0..POP_SIZE {
@@ -365,62 +286,78 @@ pub fn apply_force(particles: &Population) -> Population {
     return computed_particles;
 }
 
-pub fn compute_acceleration_in_worker(
-    particles: &Population,
-    receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>,
-    sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>,
-) {
-    loop {
-        let (particle_a_index, particle_b_index) = receiver_from_main_thread.lock().unwrap().recv().unwrap();
-        let particle_a = &particles[particle_a_index];
-        let particle_b = &particles[particle_b_index];
-        let mut acceleration_a = DEFAULT_COORDINATES;
-        let mut acceleration_b = DEFAULT_COORDINATES;
-        let distance_squared = distance_squared(particle_a.position, particle_b.position);
-        let g_by_d_squared = G / (distance_squared);
-        let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
-        let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
-        let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
-        for i in 0..DIMENSIONS {
-            let direction = particle_b.position[i] - particle_a.position[i];
-            acceleration_a[i] += direction * force_by_mass_a;
-            acceleration_b[i] -= direction * force_by_mass_b;
-        }
-        let _ = sender_to_main_thread.send(((particle_a_index, acceleration_a), (particle_b_index, acceleration_b)));
-    }
-}
+pub mod distributed {
+    use std::sync::mpsc::{Receiver, Sender};
+    use std::sync::{Arc, Mutex};
 
-pub fn apply_force_with_workers(
-    particles: &Population,
-    sender_to_workers: &Sender<(usize, usize)>,
-    receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
-) -> Population {
-    let mut computed_particles = particles.clone();
-    for particle_a_index in 0..POP_SIZE {
-        let particle_a = &particles[particle_a_index];
-        if particles[particle_a_index].mass == 0f64 {
-            continue;
+    use crate::physics::{
+        distance_squared, Coordinates, Population, DEFAULT_COORDINATES, DIMENSIONS, G, NBR_OF_POSSIBLE_PARTICLE_PAIRS,
+        POP_SIZE,
+    };
+
+    /// This is the code that will run into a worker.
+    /// It:
+    /// 1. reads a pair of particles index from receiver_from_main_thread
+    /// 2. computes the acceleration to apply to these particles based on the force they create on each other
+    /// 3. send back this information to the main thread through sender_to_main_thread
+    pub fn compute_acceleration_in_worker(
+        particles: &Population,
+        receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>,
+        sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>,
+    ) {
+        loop {
+            let (particle_a_index, particle_b_index) = receiver_from_main_thread.lock().unwrap().recv().unwrap();
+            let particle_a = &particles[particle_a_index];
+            let particle_b = &particles[particle_b_index];
+            let mut acceleration_a = DEFAULT_COORDINATES;
+            let mut acceleration_b = DEFAULT_COORDINATES;
+            let distance_squared = distance_squared(particle_a.position, particle_b.position);
+            let g_by_d_squared = G / (distance_squared);
+            let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
+            let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
+            let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
+            for i in 0..DIMENSIONS {
+                let direction = particle_b.position[i] - particle_a.position[i];
+                acceleration_a[i] += direction * force_by_mass_a;
+                acceleration_b[i] -= direction * force_by_mass_b;
+            }
+            let _ =
+                sender_to_main_thread.send(((particle_a_index, acceleration_a), (particle_b_index, acceleration_b)));
         }
-        for particle_b_index in particle_a_index + 1..POP_SIZE {
-            if particles[particle_b_index].mass == 0f64 {
+    }
+
+    pub fn apply_force_with_workers(
+        particles: &Population,
+        sender_to_workers: &Sender<(usize, usize)>,
+        receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
+    ) -> Population {
+        let mut computed_particles = particles.clone(); // Bug here: the population that the workers have is no longer valid
+        for particle_a_index in 0..POP_SIZE {
+            let particle_a = &particles[particle_a_index];
+            if particles[particle_a_index].mass == 0f64 {
                 continue;
             }
-            let result = sender_to_workers.send((particle_a_index, particle_b_index));
-            if result.is_err() {
-                println!("Failed to send {:?} to workers", (particle_a_index, particle_b_index));
+            for particle_b_index in particle_a_index + 1..POP_SIZE {
+                if particles[particle_b_index].mass == 0f64 {
+                    continue;
+                }
+                let result = sender_to_workers.send((particle_a_index, particle_b_index));
+                if result.is_err() {
+                    println!("Failed to send {:?} to workers", (particle_a_index, particle_b_index));
+                }
+            }
+            for i in 0..DIMENSIONS {
+                computed_particles[particle_a_index].position[i] += particle_a.speed[i];
             }
         }
-        for i in 0..DIMENSIONS {
-            computed_particles[particle_a_index].position[i] += particle_a.speed[i];
+        for _ in 0..NBR_OF_POSSIBLE_PARTICLE_PAIRS {
+            let ((particle_a_index, particle_a_acc), (particle_b_index, particle_b_acc)) =
+                receiver_from_workers.recv().unwrap();
+            for i in 0..DIMENSIONS {
+                computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
+                computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
+            }
         }
+        return computed_particles;
     }
-    for _ in 0..NBR_OF_POSSIBLE_PARTICLE_PAIRS {
-        let ((particle_a_index, particle_a_acc), (particle_b_index, particle_b_acc)) =
-            receiver_from_workers.recv().unwrap();
-        for i in 0..DIMENSIONS {
-            computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
-            computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
-        }
-    }
-    return computed_particles;
 }

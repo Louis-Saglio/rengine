@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
+use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 use piston_window::{
     clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
     WindowSettings,
 };
 use rand::{thread_rng, Rng};
-use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 
 use crate::physics::{apply_force, Particle, Population};
 

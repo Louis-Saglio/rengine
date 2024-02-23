@@ -1,8 +1,13 @@
-use crate::physics::{apply_force_with_workers, compute_acceleration_in_worker, Particle, WORKER_NBR};
+use load_env_var_as_usize::get_worker_nbr_from_env_var;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 use std::time::Instant;
+
+use crate::physics::distributed::{apply_force_with_workers, compute_acceleration_in_worker};
+use crate::physics::Particle;
+
+const WORKER_NBR: usize = get_worker_nbr_from_env_var!();
 
 pub fn run(iterations: u64) {
     let particles = Particle::new_random_pop();

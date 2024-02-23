@@ -1,5 +1,5 @@
 use rengine::build_variant::{BENCHMARK_BV, BENCHMARK_MULTI_THREAD_BV, BUILD_VARIANT, DEMO_BV, TEST_BV};
-use rengine::physics::{Particle, DIMENSIONS, G, MINIMAL_DISTANCE, POP_SIZE, WORKER_NBR};
+use rengine::physics::{Particle, DIMENSIONS, G, MINIMAL_DISTANCE, POP_SIZE};
 use rengine::{multi_threaded_raw_engine, raw_engine};
 
 fn main() {
