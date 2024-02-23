@@ -4,7 +4,7 @@ use rengine::{multi_threaded_raw_engine, raw_engine};
 
 fn main() {
     use rengine::graphical_engine;
-    println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}\nWORKER_NBR: {WORKER_NBR}");
+    println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}");
     if BUILD_VARIANT == BENCHMARK_MULTI_THREAD_BV {
         multi_threaded_raw_engine::run(10000);
     } else if BUILD_VARIANT == BENCHMARK_BV {

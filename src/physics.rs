@@ -176,96 +176,57 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
     }
 }
 
-fn distance(a: Coordinates, b: Coordinates) -> f64 {
-    return distance_squared(a, b).sqrt();
-}
-
-pub fn compute_acceleration_for_particle_pairs(
-    particles: &Population,
-    pairs: &[Option<(usize, usize)>],
-) -> [Coordinates; POP_SIZE] {
-    let mut acceleration = [[0f64; DIMENSIONS]; POP_SIZE];
-    for optional_pair in pairs {
-        match optional_pair {
-            None => {}
-            Some((particle_a_index, particle_b_index)) => {
-                let particle_a = &particles[*particle_a_index];
-                let particle_b = &particles[*particle_b_index];
-                if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
-                    continue;
-                }
-                let distance = distance(particle_a.position, particle_b.position);
-                let g_by_d_cubed = G / (distance * distance * distance);
-                let force_by_mass_a_by_distance = particle_b.mass * g_by_d_cubed;
-                let force_by_mass_b_by_distance = particle_a.mass * g_by_d_cubed;
-                for i in 0..DIMENSIONS {
-                    let direction = particle_b.position[i] - particle_a.position[i];
-                    acceleration[*particle_a_index][i] += direction * force_by_mass_a_by_distance;
-                    acceleration[*particle_b_index][i] -= direction * force_by_mass_b_by_distance;
-                }
-            }
-        }
-    }
-    return acceleration;
-}
-
-pub fn apply_force_by_iterating_over_possible_particle_pairs(particles: &Population) -> Population {
-    let mut computed_particles = particles.clone();
-    for i in 0..POP_SIZE {
-        for j in 0..DIMENSIONS {
-            computed_particles[i].position[j] += computed_particles[i].speed[j];
-        }
-    }
-    for (particle_a_index, particle_b_index) in POSSIBLE_PARTICLE_PAIRS {
-        let particle_a = &particles[particle_a_index];
-        let particle_b = &particles[particle_b_index];
-        if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
-            continue;
-        }
-        let distance = distance(particle_a.position, particle_b.position);
-        let g_by_d_cubed = G / (distance * distance * distance);
-        let force_by_mass_a_by_distance = particle_b.mass * g_by_d_cubed;
-        let force_by_mass_b_by_distance = particle_a.mass * g_by_d_cubed;
-        for i in 0..DIMENSIONS {
-            let direction = particle_b.position[i] - particle_a.position[i];
-            computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a_by_distance;
-            computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b_by_distance;
-        }
-    }
-    return computed_particles;
-}
-
 pub fn apply_force(particles: &Population) -> Population {
+    // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
     let mut computed_particles = particles.clone();
+
+    // This vector will contain the pairs of particles index to merge together.
     let mut to_merge: Vec<(usize, usize)> = Vec::new();
+
     for particle_a_index in 0..POP_SIZE {
         let particle_a = &particles[particle_a_index];
+
+        // If a particle has no mass it is exactly like it does not exist
         if particle_a.mass == 0f64 {
             continue;
         }
+
         for particle_b_index in particle_a_index + 1..POP_SIZE {
             let particle_b = &particles[particle_b_index];
+
+            // If a particle has no mass it is exactly like it does not exist
             if particle_b.mass == 0f64 {
                 continue;
             }
+
             let distance_squared = distance_squared(particle_a.position, particle_b.position);
+
+            // These variables may seem esoteric, but they were set up because benchmarks showed that
+            // they provided better performances than more natural choices
             let g_by_d_squared = G / (distance_squared);
             let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
             let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
             let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
+
+            // Accelerate the two particles in all dimensions
             for i in 0..DIMENSIONS {
                 let direction = particle_b.position[i] - particle_a.position[i];
                 computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a;
                 computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b;
             }
+
             if distance_squared < MINIMAL_DISTANCE_SQUARED {
                 to_merge.push((particle_a_index, particle_b_index));
             }
         }
+
+        // Move particle based on its speed during the previous frame
         for i in 0..DIMENSIONS {
             computed_particles[particle_a_index].position[i] += particle_a.speed[i];
         }
     }
+
+    // Merge together particles that have to
     for (particle_a_index, particle_b_index) in to_merge {
         let particle_a = computed_particles[particle_a_index];
         let particle_b = computed_particles[particle_b_index];
@@ -283,6 +244,7 @@ pub fn apply_force(particles: &Population) -> Population {
                 / (particle_a.mass + particle_b.mass)
         }
     }
+
     return computed_particles;
 }
 
@@ -296,7 +258,6 @@ pub mod distributed {
     };
 
     /// This is the code that will run into a worker.
-    /// It:
     /// 1. reads a pair of particles index from receiver_from_main_thread
     /// 2. computes the acceleration to apply to these particles based on the force they create on each other
     /// 3. send back this information to the main thread through sender_to_main_thread
