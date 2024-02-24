@@ -257,19 +257,25 @@ pub mod distributed {
         POP_SIZE,
     };
 
+    pub struct PartialParticle {
+        mass: f64,
+        position: Coordinates,
+        index: usize,
+    }
+
     /// This is the code that will run into a worker.
     /// 1. reads a pair of particles index from receiver_from_main_thread
     /// 2. computes the acceleration to apply to these particles based on the force they create on each other
     /// 3. send back this information to the main thread through sender_to_main_thread
     pub fn compute_acceleration_in_worker(
-        particles: &Population,
-        receiver_from_main_thread: Arc<Mutex<Receiver<(usize, usize)>>>,
+        receiver_from_main_thread: Arc<Mutex<Receiver<(PartialParticle, PartialParticle)>>>,
         sender_to_main_thread: Sender<((usize, Coordinates), (usize, Coordinates))>,
     ) {
         loop {
-            let (particle_a_index, particle_b_index) = receiver_from_main_thread.lock().unwrap().recv().unwrap();
-            let particle_a = &particles[particle_a_index];
-            let particle_b = &particles[particle_b_index];
+            let (particle_a, particle_b) = match receiver_from_main_thread.lock().unwrap().recv() {
+                Ok(x) => x,
+                Err(_) => break,
+            };
             let mut acceleration_a = DEFAULT_COORDINATES;
             let mut acceleration_b = DEFAULT_COORDINATES;
             let distance_squared = distance_squared(particle_a.position, particle_b.position);
@@ -283,13 +289,13 @@ pub mod distributed {
                 acceleration_b[i] -= direction * force_by_mass_b;
             }
             let _ =
-                sender_to_main_thread.send(((particle_a_index, acceleration_a), (particle_b_index, acceleration_b)));
+                sender_to_main_thread.send(((particle_a.index, acceleration_a), (particle_b.index, acceleration_b)));
         }
     }
 
     pub fn apply_force_with_workers(
         particles: &Population,
-        sender_to_workers: &Sender<(usize, usize)>,
+        sender_to_workers: &Sender<(PartialParticle, PartialParticle)>,
         receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
     ) -> Population {
         let mut computed_particles = particles.clone(); // Bug here: the population that the workers have is no longer valid
@@ -299,10 +305,22 @@ pub mod distributed {
                 continue;
             }
             for particle_b_index in particle_a_index + 1..POP_SIZE {
-                if particles[particle_b_index].mass == 0f64 {
+                let particle_b = &particles[particle_b_index];
+                if particle_b.mass == 0f64 {
                     continue;
                 }
-                let result = sender_to_workers.send((particle_a_index, particle_b_index));
+                let result = sender_to_workers.send((
+                    PartialParticle {
+                        mass: particle_a.mass,
+                        position: particle_a.position,
+                        index: particle_a_index,
+                    },
+                    PartialParticle {
+                        mass: particle_b.mass,
+                        position: particle_b.position,
+                        index: particle_b_index,
+                    },
+                ));
                 if result.is_err() {
                     println!("Failed to send {:?} to workers", (particle_a_index, particle_b_index));
                 }

@@ -23,7 +23,7 @@ pub fn run(iterations: u64) {
         let receiver_from_main_thread = receiver_from_main_thread.clone();
         let sender_to_main_thread = sender_to_main_thread.clone();
         workers.push(spawn(move || {
-            compute_acceleration_in_worker(&particles, receiver_from_main_thread, sender_to_main_thread)
+            compute_acceleration_in_worker(receiver_from_main_thread, sender_to_main_thread)
         }))
     }
 
