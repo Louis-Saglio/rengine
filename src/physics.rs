@@ -2,7 +2,7 @@
 
 use rand::Rng;
 
-use load_env_var_as_usize::{
+use load_env_var_as::{
     get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
 };
 

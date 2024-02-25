@@ -1,4 +1,4 @@
-use load_env_var_as_usize::get_worker_nbr_from_env_var;
+use load_env_var_as::get_worker_nbr_from_env_var;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
