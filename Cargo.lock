@@ -668,7 +668,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "load_env_var_as_usize"
+name = "load_env_var_as"
 version = "0.1.0"
 dependencies = [
  "quote",
@@ -1224,7 +1224,7 @@ dependencies = [
 name = "rengine"
 version = "0.1.0"
 dependencies = [
- "load_env_var_as_usize",
+ "load_env_var_as",
  "piston_window",
  "rand",
 ]

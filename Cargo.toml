@@ -1,4 +1,4 @@
-workspace = { members = ["load_env_var_as_usize"] }
+workspace = { members = ["load_env_var_as"] }
 [package]
 name = "rengine"
 version = "0.1.0"
@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 piston_window = "0.131.0"
 rand = "0.8.5"
-load_env_var_as_usize = {"path" = "./load_env_var_as_usize"}
+load_env_var_as = {"path" = "./load_env_var_as"}
 
 [profile.release]
 opt-level = 'z'

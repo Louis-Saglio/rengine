@@ -1,5 +1,5 @@
 [package]
-name = "load_env_var_as_usize"
+name = "load_env_var_as"
 version = "0.1.0"
 edition = "2021"
 
