@@ -19,7 +19,7 @@ struct GraphicalCoordinatesCalculator {
 
 impl GraphicalCoordinatesCalculator {
     fn compute_graphical_coordinates(&self, particle: &Particle) -> [f64; 4] {
-        let size = [particle.mass.sqrt() * 0.5f64; 2];
+        let size = [particle.mass * 0.5f64; 2];
         let mut coordinates = [particle.position[0], particle.position[1]];
         // Zoom
         coordinates[0] *= self.zoom_level;

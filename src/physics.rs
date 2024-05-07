@@ -271,25 +271,24 @@ pub mod distributed {
     }
 
     pub fn apply_force_with_workers(
-        particles: &Population,
+        particles: &mut Population,
         sender_to_workers: &Sender<(PartialParticle, PartialParticle)>,
         receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
-    ) -> Population {
-        let mut computed_particles = particles.clone(); // Bug here: the population that the workers have is no longer valid
+    ) {
+        let mut computed_particles = particles; // Bug here: the population that the workers have is no longer valid
         for particle_a_index in 0..POP_SIZE {
-            let particle_a = &particles[particle_a_index];
-            if particles[particle_a_index].mass == 0f64 {
+            if &computed_particles[particle_a_index].mass == &0f64 {
                 continue;
             }
             for particle_b_index in particle_a_index + 1..POP_SIZE {
-                let particle_b = &particles[particle_b_index];
+                let particle_b = &computed_particles[particle_b_index];
                 if particle_b.mass == 0f64 {
                     continue;
                 }
                 let result = sender_to_workers.send((
                     PartialParticle {
-                        mass: particle_a.mass,
-                        position: particle_a.position,
+                        mass: computed_particles[particle_a_index].mass,
+                        position: computed_particles[particle_a_index].position,
                         index: particle_a_index,
                     },
                     PartialParticle {
@@ -303,7 +302,7 @@ pub mod distributed {
                 }
             }
             for i in 0..DIMENSIONS {
-                computed_particles[particle_a_index].position[i] += particle_a.speed[i];
+                computed_particles[particle_a_index].position[i] += &computed_particles[particle_a_index].speed[i];
             }
         }
         for _ in 0..NBR_OF_POSSIBLE_PARTICLE_PAIRS {
@@ -313,7 +312,7 @@ pub mod distributed {
                 computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
                 computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
             }
-        }
-        return computed_particles;
+        };
+        // return computed_particles;
     }
 }
