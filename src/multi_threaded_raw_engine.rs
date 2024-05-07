@@ -10,7 +10,7 @@ use crate::physics::Particle;
 const WORKER_NBR: usize = get_worker_nbr_from_env_var!();
 
 pub fn run(iterations: u64) {
-    let particles = Particle::new_random_pop();
+    let mut particles = Particle::new_random_pop();
     let start = Instant::now();
 
     let (sender_to_workers, receiver_from_main_thread) = channel();
@@ -28,7 +28,7 @@ pub fn run(iterations: u64) {
     }
 
     for iteration in 0..iterations {
-        apply_force_with_workers(&particles, &sender_to_workers, &receiver_from_from_workers);
+        apply_force_with_workers(&mut particles, &sender_to_workers, &receiver_from_from_workers);
         if iteration % 100 == 0 {
             println!("{iteration}")
         }
