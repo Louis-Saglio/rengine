@@ -29,33 +29,8 @@ pub type Population = [Particle; POP_SIZE];
 
 const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
 
-const NBR_OF_POSSIBLE_PARTICLE_PAIRS: usize = (POP_SIZE as f64 * ((POP_SIZE - 1) as f64 / 2f64)) as usize;
 
-const fn compute_possible_particle_pairs() -> [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] {
-    let mut combinations = [(0, 0); NBR_OF_POSSIBLE_PARTICLE_PAIRS];
-    let mut i = 0;
-    let mut n = 0;
-    loop {
-        if i == POP_SIZE {
-            break;
-        }
-        let mut j = i + 1;
-        loop {
-            if j == POP_SIZE {
-                break;
-            }
-            combinations[n] = (i, j);
-            n += 1;
-            j += 1;
-        }
-        i += 1;
-    }
-    return combinations;
-}
-
-pub const POSSIBLE_PARTICLE_PAIRS: [(usize, usize); NBR_OF_POSSIBLE_PARTICLE_PAIRS] = compute_possible_particle_pairs();
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Particle {
     pub mass: f64,
     pub speed: Coordinates,
@@ -77,7 +52,7 @@ impl Particle {
         for slot in pop.iter_mut() {
             *slot = Self::new_random();
         }
-        return pop;
+        pop
     }
 
     pub fn new_random_pop_in_screen(width: u32, height: u32) -> Population {
@@ -98,7 +73,7 @@ impl Particle {
                 position,
             };
         }
-        return pop;
+        pop
     }
 
     pub fn new_test_pop() -> Population {
@@ -245,7 +220,7 @@ pub fn apply_force(particles: &Population) -> Population {
         }
     }
 
-    return computed_particles;
+    computed_particles
 }
 
 pub mod distributed {
@@ -253,9 +228,11 @@ pub mod distributed {
     use std::sync::{Arc, Mutex};
 
     use crate::physics::{
-        distance_squared, Coordinates, Population, DEFAULT_COORDINATES, DIMENSIONS, G, NBR_OF_POSSIBLE_PARTICLE_PAIRS,
+        distance_squared, Coordinates, Population, DEFAULT_COORDINATES, DIMENSIONS, G,
         POP_SIZE,
     };
+
+    const NBR_OF_POSSIBLE_PARTICLE_PAIRS: usize = (POP_SIZE as f64 * ((POP_SIZE - 1) as f64 / 2f64)) as usize;
 
     pub struct PartialParticle {
         mass: f64,
