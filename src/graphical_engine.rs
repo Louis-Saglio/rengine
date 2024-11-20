@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-
+use std::time::Instant;
 use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 use piston_window::{
     clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
@@ -57,6 +57,8 @@ impl GraphicalCoordinatesCalculator {
 struct Engine {
     particles: Population,
     graphical_coordinates_calculator: GraphicalCoordinatesCalculator,
+    fps: f64, // Added FPS field
+    last_frame_time: Instant, // Track the last frame time
 }
 
 impl Engine {
@@ -84,6 +86,13 @@ impl Engine {
 
     fn update(&mut self) {
         self.particles = apply_force(&self.particles);
+    }
+
+    fn update_fps(&mut self) {
+        let now = Instant::now();
+        let duration = now.duration_since(self.last_frame_time);
+        self.fps = 1.0 / duration.as_secs_f64();
+        self.last_frame_time = now;
     }
 }
 
@@ -118,9 +127,12 @@ pub fn run() {
             must_clear_screen: true,
             color_by_particle_id: HashMap::new(),
         },
+        fps: 0.0,
+        last_frame_time: Instant::now(),
     };
 
     while let Some(event) = window.next() {
+        engine.update_fps();
         match event {
             Event::Input(Input::Move(Motion::MouseScroll(scroll)), _) => {
                 engine.graphical_coordinates_calculator.zoom(scroll[1])
@@ -156,7 +168,7 @@ pub fn run() {
                             &*format!("{}", nbr),
                             &mut glyphs,
                             &context.draw_state,
-                            context.transform.trans(10.0, 100.0),
+                            context.transform.trans(0.0, 32.0),
                             graphics,
                         )
                         .unwrap();
