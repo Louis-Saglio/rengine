@@ -5,3 +5,5 @@ pub const BENCHMARK_BV: &str = "BENCHMARK";
 
 pub const BENCHMARK_MULTI_THREAD_BV: &str = "BENCHMARK_MULTI_THREAD";
 pub const DEMO_BV: &str = "DEMO";
+
+pub const FRAMEBUFFER_BV: &str = "FRAMEBUFFER";
