@@ -16,7 +16,7 @@ fn main() {
         println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}");
         graphical_engine::run();
     } else if BUILD_VARIANT == FRAMEBUFFER_BV {
-        sandbox();
+        sandbox(Particle::new_random_pop());
     } else {
         println!("Unknown build variant '{BUILD_VARIANT}'")
     }
