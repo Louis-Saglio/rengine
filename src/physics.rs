@@ -275,7 +275,7 @@ pub mod distributed {
         sender_to_workers: &Sender<(PartialParticle, PartialParticle)>,
         receiver_from_workers: &Receiver<((usize, Coordinates), (usize, Coordinates))>,
     ) {
-        let mut computed_particles = particles; // Bug here: the population that the workers have is no longer valid
+        let computed_particles = particles; // Bug here: the population that the workers have is no longer valid
         for particle_a_index in 0..POP_SIZE {
             if &computed_particles[particle_a_index].mass == &0f64 {
                 continue;
