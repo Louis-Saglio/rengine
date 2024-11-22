@@ -30,7 +30,7 @@ pub type Population = [Particle; POP_SIZE];
 const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
 
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct Particle {
     pub mass: f64,
     pub speed: Coordinates,
@@ -153,7 +153,7 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
 
 pub fn apply_force(particles: &Population) -> Population {
     // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
-    let mut computed_particles = particles.clone();
+    let mut computed_particles = *particles;
 
     // This vector will contain the pairs of particles index to merge together.
     let mut to_merge: Vec<(usize, usize)> = Vec::new();
