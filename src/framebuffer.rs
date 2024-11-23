@@ -18,13 +18,14 @@ const DESIRED_UPDATE_DURATION: Duration = Duration::from_micros(1000000 / DESIRE
 
 struct Framebuffer {
     mmap: MmapMut,
+    shift: (isize, isize),
 }
 
 impl Framebuffer {
     pub fn new() -> Self {
         let file = OpenOptions::new().read(true).write(true).open("/dev/fb0").unwrap();
         let mmap = unsafe { MmapOptions::new().len(FRAMEBUFFER_LENGTH).map_mut(&file).unwrap() };
-        Framebuffer { mmap }
+        Framebuffer { mmap, shift: (0, 0) }
     }
 
     pub fn clear(&mut self) {
@@ -36,6 +37,8 @@ impl Framebuffer {
     }
 
     pub fn draw_pixel(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
+        let x = x + self.shift.0;
+        let y = y + self.shift.1;
         let anchor_pixel_index = Framebuffer::get_buffer_index(x, y);
         if anchor_pixel_index >= 0 && anchor_pixel_index + (BYTES_PER_PIXEL as isize) < (FRAMEBUFFER_LENGTH as isize) {
             let anchor_pixel_index = anchor_pixel_index as usize;
@@ -105,14 +108,21 @@ pub fn sandbox() {
         match kb_file.read(&mut kb_buffer) {
             Ok(_) => {
                 let kb_event: InputEvent = unsafe { transmute(kb_buffer) };
-                println!("{kb_event:?}");
+                if kb_event.type_ == 1 {
+                    match kb_event.code {
+                        105 => framebuffer.shift.0 += 10,
+                        106 => framebuffer.shift.0 -= 10,
+                        103 => framebuffer.shift.1 += 10,
+                        108 => framebuffer.shift.1 -= 10,
+                        _ => {}
+                    }
+                }
             }
             Err(_) => {}
         }
 
         population = apply_force(&population);
         framebuffer.clear();
-        println!("{:?}", population);
         for particle in population.iter() {
             framebuffer.draw_circle(
                 particle.position[0] as isize,
