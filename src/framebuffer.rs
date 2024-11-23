@@ -1,6 +1,9 @@
 use crate::physics::{apply_force, Particle};
 use memmap2::{MmapMut, MmapOptions};
 use std::fs::OpenOptions;
+use std::io::Read;
+use std::mem::transmute;
+use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -65,7 +68,21 @@ impl Framebuffer {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
+struct InputEvent {
+    time: [u64; 2],
+    type_: u16,
+    code: u16,
+    value: i32,
+}
+
 pub fn sandbox() {
+    let mut kb_file = OpenOptions::new()
+        .read(true)
+        .custom_flags(0x800)
+        .open("/dev/input/event10")
+        .expect("Unable to open keyboard device");
     let mut framebuffer = Framebuffer::new();
     let mut population = [
         Particle {
@@ -80,8 +97,19 @@ pub fn sandbox() {
         },
     ];
     println!("{:?}", population);
-    for i in 0..1000 {
+    loop {
         let update_start = Instant::now();
+
+        let mut kb_buffer = [0u8; 24];
+
+        match kb_file.read(&mut kb_buffer) {
+            Ok(_) => {
+                let kb_event: InputEvent = unsafe { transmute(kb_buffer) };
+                println!("{kb_event:?}");
+            }
+            Err(_) => {}
+        }
+
         population = apply_force(&population);
         framebuffer.clear();
         println!("{:?}", population);
