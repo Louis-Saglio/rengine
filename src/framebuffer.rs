@@ -19,13 +19,18 @@ const DESIRED_UPDATE_DURATION: Duration = Duration::from_micros(1000000 / DESIRE
 struct Framebuffer {
     mmap: MmapMut,
     shift: (isize, isize),
+    zoom: f32,
 }
 
 impl Framebuffer {
     pub fn new() -> Self {
-        let file = OpenOptions::new().read(true).write(true).open("/dev/fb0").unwrap();
-        let mmap = unsafe { MmapOptions::new().len(FRAMEBUFFER_LENGTH).map_mut(&file).unwrap() };
-        Framebuffer { mmap, shift: (0, 0) }
+        let file = OpenOptions::new().read(true).write(true).open("/dev/fb0").expect("Unable to open framebuffer device");
+        let mmap = unsafe { MmapOptions::new().len(FRAMEBUFFER_LENGTH).map_mut(&file).expect("Unable to mmap framebuffer") };
+        Framebuffer {
+            mmap,
+            shift: (0, 0),
+            zoom: 1.0,
+        }
     }
 
     pub fn clear(&mut self) {
@@ -37,8 +42,8 @@ impl Framebuffer {
     }
 
     pub fn draw_pixel(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
-        let x = x + self.shift.0;
-        let y = y + self.shift.1;
+        let x = ((x + self.shift.0) as f32 * self.zoom) as isize;
+        let y = ((y + self.shift.1) as f32 * self.zoom) as isize;
         let anchor_pixel_index = Framebuffer::get_buffer_index(x, y);
         if anchor_pixel_index >= 0 && anchor_pixel_index + (BYTES_PER_PIXEL as isize) < (FRAMEBUFFER_LENGTH as isize) {
             let anchor_pixel_index = anchor_pixel_index as usize;
@@ -86,15 +91,20 @@ pub fn sandbox() {
         .custom_flags(0x800)
         .open("/dev/input/event10")
         .expect("Unable to open keyboard device");
+    let mut mouse_file = OpenOptions::new()
+        .read(true)
+        .custom_flags(0x800)
+        .open("/dev/input/event8")
+        .expect("Unable to open mouse device");
     let mut framebuffer = Framebuffer::new();
     let mut population = [
         Particle {
-            mass: 100.0,
+            mass: 0.0,
             speed: [0.0, 0.0],
             position: [500.0, 500.0],
         },
         Particle {
-            mass: 100.0,
+            mass: 0.0,
             speed: [0.0, 0.0],
             position: [600.0, 600.0],
         },
@@ -104,7 +114,6 @@ pub fn sandbox() {
         let update_start = Instant::now();
 
         let mut kb_buffer = [0u8; 24];
-
         match kb_file.read(&mut kb_buffer) {
             Ok(_) => {
                 let kb_event: InputEvent = unsafe { transmute(kb_buffer) };
@@ -114,6 +123,25 @@ pub fn sandbox() {
                         106 => framebuffer.shift.0 -= 10,
                         103 => framebuffer.shift.1 += 10,
                         108 => framebuffer.shift.1 -= 10,
+                        _ => {}
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+
+        let mut mouse_buffer = [0u8; 24];
+        match mouse_file.read(&mut mouse_buffer) {
+            Ok(_) => {
+                let mouse_event: InputEvent = unsafe { transmute(mouse_buffer) };
+                if mouse_event.type_ == 2 && mouse_event.code == 8 {
+                    match mouse_event.value {
+                        1 => framebuffer.zoom += 0.1,
+                        -1 => {
+                            if framebuffer.zoom > 0.1 {
+                                framebuffer.zoom -= 0.1
+                            }
+                        }
                         _ => {}
                     }
                 }
