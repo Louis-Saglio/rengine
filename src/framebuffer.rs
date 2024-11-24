@@ -97,19 +97,7 @@ pub fn sandbox() {
         .open("/dev/input/event8")
         .expect("Unable to open mouse device");
     let mut framebuffer = Framebuffer::new();
-    let mut population = [
-        Particle {
-            mass: 0.0,
-            speed: [0.0, 0.0],
-            position: [500.0, 500.0],
-        },
-        Particle {
-            mass: 0.0,
-            speed: [0.0, 0.0],
-            position: [600.0, 600.0],
-        },
-    ];
-    println!("{:?}", population);
+    let mut population = Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
     loop {
         let update_start = Instant::now();
 
@@ -152,6 +140,9 @@ pub fn sandbox() {
         population = apply_force(&population);
         framebuffer.clear();
         for particle in population.iter() {
+            if particle.mass == 0.0 {
+                continue
+            }
             framebuffer.draw_circle(
                 particle.position[0] as isize,
                 particle.position[1] as isize,
@@ -162,6 +153,8 @@ pub fn sandbox() {
         let update_duration = update_start.elapsed();
         if update_duration < DESIRED_UPDATE_DURATION {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
+        } else {
+            println!("Update lasted {:?} too long", update_duration - DESIRED_UPDATE_DURATION);
         }
     }
 }

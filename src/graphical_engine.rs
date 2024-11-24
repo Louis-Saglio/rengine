@@ -19,7 +19,7 @@ struct GraphicalCoordinatesCalculator {
 
 impl GraphicalCoordinatesCalculator {
     fn compute_graphical_coordinates(&self, particle: &Particle) -> [f64; 4] {
-        let size = [particle.mass * 0.5f64; 2];
+        let size = [particle.mass.sqrt(); 2];
         let mut coordinates = [particle.position[0], particle.position[1]];
         // Zoom
         coordinates[0] *= self.zoom_level;
@@ -33,7 +33,7 @@ impl GraphicalCoordinatesCalculator {
         // The graphical coordinates is the top left corner of the box around the ellipse
         coordinates[0] -= size[0] / 2f64;
         coordinates[1] -= size[1] / 2f64;
-        return [coordinates[0], coordinates[1], size[0], size[1]];
+        [coordinates[0], coordinates[1], size[0], size[1]]
     }
 
     fn zoom(&mut self, scroll: f64) {
@@ -50,7 +50,7 @@ impl GraphicalCoordinatesCalculator {
             self.color_by_particle_id
                 .insert(particle_id, [rng.gen(), rng.gen(), rng.gen()]);
         };
-        return self.color_by_particle_id[&particle_id];
+        self.color_by_particle_id[&particle_id]
     }
 }
 
