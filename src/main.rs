@@ -3,7 +3,7 @@ use rengine::graphical_engine;
 use rengine::physics::{Particle, DIMENSIONS, G, MINIMAL_DISTANCE, POP_SIZE};
 
 use rengine::{multi_threaded_raw_engine, raw_engine};
-use rengine::framebuffer::sandbox;
+use rengine::framebuffer;
 
 fn main() {
     if BUILD_VARIANT == BENCHMARK_MULTI_THREAD_BV {
@@ -17,7 +17,7 @@ fn main() {
         graphical_engine::run();
     } else if BUILD_VARIANT == FRAMEBUFFER_BV {
         println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}");
-        sandbox();
+        framebuffer::run();
     } else {
         println!("Unknown build variant '{BUILD_VARIANT}'")
     }

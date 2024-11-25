@@ -14,37 +14,38 @@ const SCREEN_HEIGHT: usize = 1080;
 const FRAMEBUFFER_LENGTH: usize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
 
 const DESIRED_UPS: u8 = 60;
-const DESIRED_UPDATE_DURATION: Duration = Duration::from_micros(1000000 / DESIRED_UPS as u64);
+const DESIRED_UPDATE_DURATION: Duration = if DESIRED_UPS == 0 {
+    Duration::ZERO
+} else {
+    Duration::from_micros(1000000 / DESIRED_UPS as u64)
+};
 
 struct Framebuffer {
     mmap: MmapMut,
-    shift: (isize, isize),
-    zoom: f32,
 }
 
 impl Framebuffer {
     pub fn new() -> Self {
-        let file = OpenOptions::new().read(true).write(true).open("/dev/fb0").expect("Unable to open framebuffer device");
-        let mmap = unsafe { MmapOptions::new().len(FRAMEBUFFER_LENGTH).map_mut(&file).expect("Unable to mmap framebuffer") };
-        Framebuffer {
-            mmap,
-            shift: (0, 0),
-            zoom: 1.0,
-        }
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/fb0")
+            .expect("Unable to open framebuffer device");
+        let mmap = unsafe {
+            MmapOptions::new()
+                .len(FRAMEBUFFER_LENGTH)
+                .map_mut(&file)
+                .expect("Unable to mmap framebuffer")
+        };
+        Framebuffer { mmap }
     }
 
     pub fn clear(&mut self) {
         self.mmap.fill(0)
     }
 
-    fn get_buffer_index(x: isize, y: isize) -> isize {
-        (y * (SCREEN_WIDTH as isize) + x) * (BYTES_PER_PIXEL as isize)
-    }
-
     pub fn draw_pixel(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
-        let x = ((x + self.shift.0) as f32 * self.zoom) as isize;
-        let y = ((y + self.shift.1) as f32 * self.zoom) as isize;
-        let anchor_pixel_index = Framebuffer::get_buffer_index(x, y);
+        let anchor_pixel_index = (y * (SCREEN_WIDTH as isize) + x) * (BYTES_PER_PIXEL as isize);
         if anchor_pixel_index >= 0 && anchor_pixel_index + (BYTES_PER_PIXEL as isize) < (FRAMEBUFFER_LENGTH as isize) {
             let anchor_pixel_index = anchor_pixel_index as usize;
             let pixel_slice = &mut self.mmap[anchor_pixel_index..anchor_pixel_index + BYTES_PER_PIXEL];
@@ -85,19 +86,26 @@ struct InputEvent {
     value: i32,
 }
 
-pub fn sandbox() {
+pub fn run() {
     let mut kb_file = OpenOptions::new()
         .read(true)
         .custom_flags(0x800)
         .open("/dev/input/event10")
         .expect("Unable to open keyboard device");
+
     let mut mouse_file = OpenOptions::new()
         .read(true)
         .custom_flags(0x800)
         .open("/dev/input/event8")
         .expect("Unable to open mouse device");
+
     let mut framebuffer = Framebuffer::new();
+
     let mut population = Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
+
+    let mut zoom: f64 = 1.0;
+    let mut shift: (isize, isize) = (0, 0);
+
     loop {
         let update_start = Instant::now();
 
@@ -107,10 +115,10 @@ pub fn sandbox() {
                 let kb_event: InputEvent = unsafe { transmute(kb_buffer) };
                 if kb_event.type_ == 1 {
                     match kb_event.code {
-                        105 => framebuffer.shift.0 += 10,
-                        106 => framebuffer.shift.0 -= 10,
-                        103 => framebuffer.shift.1 += 10,
-                        108 => framebuffer.shift.1 -= 10,
+                        105 => shift.0 += 10,
+                        106 => shift.0 -= 10,
+                        103 => shift.1 += 10,
+                        108 => shift.1 -= 10,
                         _ => {}
                     }
                 }
@@ -124,12 +132,8 @@ pub fn sandbox() {
                 let mouse_event: InputEvent = unsafe { transmute(mouse_buffer) };
                 if mouse_event.type_ == 2 && mouse_event.code == 8 {
                     match mouse_event.value {
-                        1 => framebuffer.zoom += 0.1,
-                        -1 => {
-                            if framebuffer.zoom > 0.1 {
-                                framebuffer.zoom -= 0.1
-                            }
-                        }
+                        1 => zoom *= 1.1,
+                        -1 => zoom *= 0.9,
                         _ => {}
                     }
                 }
@@ -138,20 +142,24 @@ pub fn sandbox() {
         }
 
         population = apply_force(&population);
+
         framebuffer.clear();
+
         for particle in population.iter() {
             if particle.mass == 0.0 {
-                continue
+                continue;
             }
             framebuffer.draw_circle(
-                particle.position[0] as isize,
-                particle.position[1] as isize,
+                (particle.position[0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+                (particle.position[1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
                 5,
                 &[255, 150, 100, 255],
             );
         }
+
         let update_duration = update_start.elapsed();
-        if update_duration < DESIRED_UPDATE_DURATION {
+        if DESIRED_UPDATE_DURATION.is_zero() {
+        } else if update_duration < DESIRED_UPDATE_DURATION {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
         } else {
             println!("Update lasted {:?} too long", update_duration - DESIRED_UPDATE_DURATION);
