@@ -59,6 +59,8 @@ struct Engine {
     graphical_coordinates_calculator: GraphicalCoordinatesCalculator,
     fps: f64, // Added FPS field
     last_frame_time: Instant, // Track the last frame time
+    ups: f64,
+    last_update_time: Instant
 }
 
 impl Engine {
@@ -82,10 +84,12 @@ impl Engine {
                 graphics,
             )
         }
+        self.update_fps();
     }
 
     fn update(&mut self) {
         self.particles = apply_force(&self.particles);
+        self.update_ups();
     }
 
     fn update_fps(&mut self) {
@@ -93,6 +97,13 @@ impl Engine {
         let duration = now.duration_since(self.last_frame_time);
         self.fps = 1.0 / duration.as_secs_f64();
         self.last_frame_time = now;
+    }
+
+    fn update_ups(&mut self) {
+        let now = Instant::now();
+        let duration = now.duration_since(self.last_update_time);
+        self.ups = 1.0 / duration.as_secs_f64();
+        self.last_update_time = now;
     }
 }
 
@@ -103,8 +114,8 @@ pub fn run() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_max_fps(60);
-    window.set_ups(60);
+    window.set_max_fps(600);
+    window.set_ups(600);
 
     let mut glyphs = window
         .load_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf")
@@ -129,10 +140,11 @@ pub fn run() {
         },
         fps: 0.0,
         last_frame_time: Instant::now(),
+        ups: 0.0,
+        last_update_time: Instant::now()
     };
 
     while let Some(event) = window.next() {
-        engine.update_fps();
         match event {
             Event::Input(Input::Move(Motion::MouseScroll(scroll)), _) => {
                 engine.graphical_coordinates_calculator.zoom(scroll[1])
@@ -165,7 +177,7 @@ pub fn run() {
                     engine.render(context, graphics);
                     text::Text::new_color([1.0, 0.0, 0.0, 1.0], 32)
                         .draw(
-                            &*format!("{}", nbr),
+                            &*format!("{} - {} - {}", nbr, engine.fps.round(), engine.ups.round()),
                             &mut glyphs,
                             &context.draw_state,
                             context.transform.trans(0.0, 32.0),
