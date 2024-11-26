@@ -1,5 +1,7 @@
-use crate::physics::{apply_force, Particle};
+use crate::physics::{apply_force, Particle, POP_SIZE};
 use memmap2::{MmapMut, MmapOptions};
+use rand::{random, Rng};
+use std::array;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::mem::transmute;
@@ -13,7 +15,7 @@ const SCREEN_HEIGHT: usize = 1080;
 
 const FRAMEBUFFER_LENGTH: usize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
 
-const DESIRED_UPS: u8 = 60;
+const DESIRED_UPS: u8 = 255;
 const DESIRED_UPDATE_DURATION: Duration = if DESIRED_UPS == 0 {
     Duration::ZERO
 } else {
@@ -102,6 +104,7 @@ pub fn run() {
     let mut framebuffer = Framebuffer::new();
 
     let mut population = Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
+    let particles_colors: [[u8; BYTES_PER_PIXEL]; POP_SIZE] = array::from_fn(|_| random());
 
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
@@ -145,15 +148,15 @@ pub fn run() {
 
         framebuffer.clear();
 
-        for particle in population.iter() {
+        for (particle, particle_color) in population.iter().zip(particles_colors.iter()) {
             if particle.mass == 0.0 {
                 continue;
             }
             framebuffer.draw_circle(
                 (particle.position[0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
                 (particle.position[1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
-                5,
-                &[255, 150, 100, 255],
+                particle.mass.sqrt() as usize,
+                particle_color,
             );
         }
 
