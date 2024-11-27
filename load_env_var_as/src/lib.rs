@@ -50,3 +50,23 @@ pub fn get_minimal_distance_from_env_var(_input: TokenStream) -> TokenStream {
     };
     TokenStream::from(expanded)
 }
+
+#[proc_macro]
+pub fn get_iterations_from_env_var(_input: TokenStream) -> TokenStream {
+    let dim_str = option_env!("ITERATIONS").unwrap_or("0");
+    let dim_usize = dim_str.parse::<u32>().expect("Expected ITERATIONS to be u32");
+    let expanded = quote! {
+        #dim_usize
+    };
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+pub fn get_desired_ups_from_env_var(_input: TokenStream) -> TokenStream {
+    let dim_str = option_env!("DESIRED_UPS").unwrap_or("0");
+    let dim_usize = dim_str.parse::<u8>().expect("Expected DESIRED_UPS to be u8");
+    let expanded = quote! {
+        #dim_usize
+    };
+    TokenStream::from(expanded)
+}
