@@ -1,4 +1,5 @@
-use rengine::build_variant::{BENCHMARK_BV, BENCHMARK_MULTI_THREAD_BV, BUILD_VARIANT, DEMO_BV, FRAMEBUFFER_BV, TEST_BV};
+use std::time::Instant;
+use rengine::build_variant::{BENCHMARK_BV, BENCHMARK_MULTI_THREAD_BV, BUILD_VARIANT, DEMO_BV, FRAMEBUFFER_BENCHMARK_BV, FRAMEBUFFER_BV, TEST_BV};
 use rengine::graphical_engine;
 use rengine::physics::{Particle, DIMENSIONS, G, MINIMAL_DISTANCE, POP_SIZE};
 
@@ -18,6 +19,11 @@ fn main() {
     } else if BUILD_VARIANT == FRAMEBUFFER_BV {
         println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}");
         framebuffer::run();
+    } else if BUILD_VARIANT == FRAMEBUFFER_BENCHMARK_BV {
+        println!("DIMENSIONS: {DIMENSIONS}\nPOP_SIZE: {POP_SIZE}\nG: {G}\nMINIMAL_DISTANCE: {MINIMAL_DISTANCE}");
+        let start = Instant::now();
+        framebuffer::run();
+        println!("Framebuffer execution time: {:?}", start.elapsed());
     } else {
         println!("Unknown build variant '{BUILD_VARIANT}'")
     }

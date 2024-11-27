@@ -1,6 +1,6 @@
 use crate::physics::{apply_force, Particle, POP_SIZE};
 use memmap2::{MmapMut, MmapOptions};
-use rand::{random, Rng};
+use rand::{random};
 use std::array;
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -8,6 +8,7 @@ use std::mem::transmute;
 use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var};
 
 const BYTES_PER_PIXEL: usize = 4;
 const SCREEN_WIDTH: usize = 1920;
@@ -15,12 +16,14 @@ const SCREEN_HEIGHT: usize = 1080;
 
 const FRAMEBUFFER_LENGTH: usize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
 
-const DESIRED_UPS: u8 = 255;
+const DESIRED_UPS: u8 = get_desired_ups_from_env_var!();
 const DESIRED_UPDATE_DURATION: Duration = if DESIRED_UPS == 0 {
     Duration::ZERO
 } else {
     Duration::from_micros(1000000 / DESIRED_UPS as u64)
 };
+
+const ITERATIONS: u32 = get_iterations_from_env_var!();
 
 struct Framebuffer {
     mmap: MmapMut,
@@ -109,7 +112,14 @@ pub fn run() {
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
 
+    let mut i = 0;
     loop {
+        if ITERATIONS > 0 { 
+            i += 1;
+            if i == ITERATIONS {
+                break;
+            }
+        }
         let update_start = Instant::now();
 
         let mut kb_buffer = [0u8; 24];
@@ -164,8 +174,6 @@ pub fn run() {
         if DESIRED_UPDATE_DURATION.is_zero() {
         } else if update_duration < DESIRED_UPDATE_DURATION {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
-        } else {
-            println!("Update lasted {:?} too long", update_duration - DESIRED_UPDATE_DURATION);
         }
     }
 }
