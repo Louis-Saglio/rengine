@@ -171,7 +171,7 @@ pub fn run() {
 
         population = apply_force(&population);
 
-        if clear_between_frames {
+        if clear_between_frames && i % 10 == 0 {
             framebuffer.clear();
         }
 
