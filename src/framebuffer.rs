@@ -1,6 +1,7 @@
 use crate::physics::{apply_force, Particle, POP_SIZE};
+use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
-use rand::{random};
+use rand::random;
 use std::array;
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -8,7 +9,6 @@ use std::mem::transmute;
 use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var};
 
 const BYTES_PER_PIXEL: usize = 4;
 const SCREEN_WIDTH: usize = 1920;
@@ -111,10 +111,11 @@ pub fn run() {
 
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
+    let mut clear_between_frames = true;
 
     let mut i = 0;
     loop {
-        if ITERATIONS > 0 { 
+        if ITERATIONS > 0 {
             i += 1;
             if i == ITERATIONS {
                 break;
@@ -132,6 +133,10 @@ pub fn run() {
                         106 => shift.0 -= 10,
                         103 => shift.1 += 10,
                         108 => shift.1 -= 10,
+                        20 => match kb_event.value {
+                            1 => clear_between_frames = !clear_between_frames,
+                            _ => {}
+                        },
                         _ => {}
                     }
                 }
@@ -156,7 +161,9 @@ pub fn run() {
 
         population = apply_force(&population);
 
-        framebuffer.clear();
+        if clear_between_frames {
+            framebuffer.clear();
+        }
 
         for (particle, particle_color) in population.iter().zip(particles_colors.iter()) {
             if particle.mass == 0.0 {
@@ -168,6 +175,13 @@ pub fn run() {
                 particle.mass.sqrt() as usize,
                 particle_color,
             );
+            // framebuffer.draw_square(
+            //     (particle.position[0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+            //     (particle.position[1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
+            //     particle.mass.sqrt() as usize,
+            //     particle.mass.sqrt() as usize,
+            //     particle_color,
+            // );
         }
 
         let update_duration = update_start.elapsed();
