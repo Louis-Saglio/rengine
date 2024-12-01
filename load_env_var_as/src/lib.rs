@@ -70,3 +70,12 @@ pub fn get_desired_ups_from_env_var(_input: TokenStream) -> TokenStream {
     };
     TokenStream::from(expanded)
 }
+
+#[proc_macro]
+pub fn get_particle_shape_from_env_var(_input: TokenStream) -> TokenStream {
+    let dim_str = option_env!("PARTICLE_SHAPE").unwrap_or("circle");
+    let expanded = quote! {
+        #dim_str
+    };
+    TokenStream::from(expanded)
+}
