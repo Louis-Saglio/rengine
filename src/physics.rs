@@ -114,7 +114,7 @@ impl Particle {
                 },
             }
         }
-        return pop;
+        pop
     }
 }
 
