@@ -123,36 +123,44 @@ pub fn run() {
         }
         let update_start = Instant::now();
 
-        let mut kb_buffer = [0u8; 24];
+        let mut kb_buffer = vec![0u8; 24];
         match kb_file.read(&mut kb_buffer) {
             Ok(_) => {
-                let kb_event: InputEvent = unsafe { transmute(kb_buffer) };
-                if kb_event.type_ == 1 {
-                    match kb_event.code {
-                        105 => shift.0 += 10,
-                        106 => shift.0 -= 10,
-                        103 => shift.1 += 10,
-                        108 => shift.1 -= 10,
-                        20 => match kb_event.value {
-                            1 => clear_between_frames = !clear_between_frames,
+                for chunk in kb_buffer.chunks_exact(24) {
+                    let mut i = [0u8; 24];
+                    i.copy_from_slice(chunk);
+                    let kb_event: InputEvent = unsafe { transmute(i) };
+                    if kb_event.type_ == 1 {
+                        match kb_event.code {
+                            105 => shift.0 += 10,
+                            106 => shift.0 -= 10,
+                            103 => shift.1 += 10,
+                            108 => shift.1 -= 10,
+                            20 => match kb_event.value {
+                                1 => clear_between_frames = !clear_between_frames,
+                                _ => {}
+                            },
                             _ => {}
-                        },
-                        _ => {}
+                        }
                     }
                 }
             }
             Err(_) => {}
         }
 
-        let mut mouse_buffer = [0u8; 24];
+        let mut mouse_buffer = vec![0u8; 24];
         match mouse_file.read(&mut mouse_buffer) {
             Ok(_) => {
-                let mouse_event: InputEvent = unsafe { transmute(mouse_buffer) };
-                if mouse_event.type_ == 2 && mouse_event.code == 8 {
-                    match mouse_event.value {
-                        1 => zoom *= 1.1,
-                        -1 => zoom *= 0.9,
-                        _ => {}
+                for chunk in mouse_buffer.chunks_exact(24) {
+                    let mut i = [0u8; 24];
+                    i.copy_from_slice(chunk);
+                    let mouse_event: InputEvent = unsafe { transmute(i) };
+                    if mouse_event.type_ == 2 && mouse_event.code == 8 {
+                        match mouse_event.value {
+                            1 => zoom *= 1.1,
+                            -1 => zoom *= 0.9,
+                            _ => {}
+                        }
                     }
                 }
             }
