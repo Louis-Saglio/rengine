@@ -52,6 +52,9 @@ impl Framebuffer {
     }
 
     pub fn draw_pixel(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
+        if x < 0 || x >= SCREEN_WIDTH as isize || y < 0 || y >= SCREEN_HEIGHT as isize {
+            return;
+        }
         let anchor_pixel_index = (y * (SCREEN_WIDTH as isize) + x) * (BYTES_PER_PIXEL as isize);
         if anchor_pixel_index >= 0 && anchor_pixel_index + (BYTES_PER_PIXEL as isize) < (FRAMEBUFFER_LENGTH as isize) {
             let anchor_pixel_index = anchor_pixel_index as usize;
