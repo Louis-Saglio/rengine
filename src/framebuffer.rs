@@ -16,7 +16,7 @@ const SCREEN_HEIGHT: usize = 1080;
 
 const FRAMEBUFFER_LENGTH: usize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
 
-const DESIRED_UPS: u8 = get_desired_ups_from_env_var!();
+const DESIRED_UPS: u16 = get_desired_ups_from_env_var!();
 const DESIRED_UPDATE_DURATION: Duration = if DESIRED_UPS == 0 {
     Duration::ZERO
 } else {
@@ -117,6 +117,8 @@ pub fn run() {
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
     let mut clear_between_frames = true;
+    
+    framebuffer.clear();
 
     let mut i = 0;
     loop {
