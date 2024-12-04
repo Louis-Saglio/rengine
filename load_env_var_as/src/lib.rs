@@ -64,7 +64,7 @@ pub fn get_iterations_from_env_var(_input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn get_desired_ups_from_env_var(_input: TokenStream) -> TokenStream {
     let dim_str = option_env!("DESIRED_UPS").unwrap_or("0");
-    let dim_usize = dim_str.parse::<u8>().expect("Expected DESIRED_UPS to be u8");
+    let dim_usize = dim_str.parse::<u16>().expect("Expected DESIRED_UPS to be u16");
     let expanded = quote! {
         #dim_usize
     };
