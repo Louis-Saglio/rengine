@@ -78,9 +78,7 @@ impl Framebuffer {
                 if dx * dx + dy * dy <= rsqr {
                     let px = x + dx;
                     let py = y + dy;
-                    if (px as usize) < SCREEN_WIDTH && (py as usize) < SCREEN_HEIGHT {
-                        self.draw_pixel(px, py, color);
-                    }
+                    self.draw_pixel(px, py, color);
                 }
             }
         }
@@ -120,6 +118,15 @@ pub fn run() {
     
     framebuffer.clear();
 
+    let mut total_simulation_time = Duration::ZERO;
+    let mut total_rendering_time = Duration::ZERO;
+    let mut total_clearing_screen_time = Duration::ZERO;
+    let mut total_input_handling_time = Duration::ZERO;
+
+    let engine_start_instant = Instant::now();
+
+    let mut quit = false;
+
     let mut i = 0;
     loop {
         if ITERATIONS > 0 {
@@ -128,8 +135,12 @@ pub fn run() {
                 break;
             }
         }
+        if quit {
+            break;
+        }
         let update_start = Instant::now();
 
+        let start = Instant::now();
         let mut kb_buffer = vec![0u8; 24];
         match kb_file.read(&mut kb_buffer) {
             Ok(_) => {
@@ -147,6 +158,7 @@ pub fn run() {
                                 1 => clear_between_frames = !clear_between_frames,
                                 _ => {}
                             },
+                            16 => quit = true,
                             _ => {}
                         }
                     }
@@ -173,13 +185,19 @@ pub fn run() {
             }
             Err(_) => {}
         }
+        total_input_handling_time += start.elapsed();
 
+        let start = Instant::now();
         population = apply_force(&population);
+        total_simulation_time += start.elapsed();
 
+        let start = Instant::now();
         if clear_between_frames && i % 10 == 0 {
             framebuffer.clear();
         }
+        total_clearing_screen_time += start.elapsed();
 
+        let start = Instant::now();
         for (particle, particle_color) in population.iter().zip(particles_colors.iter()) {
             if particle.mass == 0.0 {
                 continue;
@@ -201,6 +219,7 @@ pub fn run() {
                 );
             }
         }
+        total_rendering_time += start.elapsed();
 
         let update_duration = update_start.elapsed();
         if DESIRED_UPDATE_DURATION.is_zero() {
@@ -208,4 +227,20 @@ pub fn run() {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
         }
     }
+
+    println!("UPS: {}", ITERATIONS as u64 / engine_start_instant.elapsed().as_secs());
+    println!("Total time: {}ms", engine_start_instant.elapsed().as_millis());
+    println!("Simulation time: {}ms", total_simulation_time.as_millis());
+    println!("Rendering time: {}ms", total_rendering_time.as_millis());
+    println!("Clearing screen time: {}ms", total_clearing_screen_time.as_millis());
+    println!("Input handling time: {}ms", total_input_handling_time.as_millis());
+    println!(
+        "Unaccounted time: {}ms",
+        (engine_start_instant.elapsed()
+            - total_simulation_time
+            - total_rendering_time
+            - total_input_handling_time
+            - total_clearing_screen_time)
+            .as_millis()
+    )
 }
