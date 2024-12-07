@@ -1,0 +1,15 @@
+rotate camera partially between dimensions
+
+reset camera keybinding
+
+pause/slowdown/speedup ups
+
+select particle with mouse
+
+speed based particle color
+
+device selector
+
+verify that rengine has enough stack
+
+clear screen only when enough time passed since the last clear screen

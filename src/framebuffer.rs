@@ -29,6 +29,7 @@ const PARTICLE_SHAPE: &str = get_particle_shape_from_env_var!();
 
 struct Framebuffer {
     mmap: MmapMut,
+    buffer: Box<[u8; FRAMEBUFFER_LENGTH]>,
 }
 
 impl Framebuffer {
@@ -44,11 +45,11 @@ impl Framebuffer {
                 .map_mut(&file)
                 .expect("Unable to mmap framebuffer")
         };
-        Framebuffer { mmap }
+        Framebuffer { mmap, buffer: Box::new([0; FRAMEBUFFER_LENGTH]) }
     }
 
     pub fn clear(&mut self) {
-        self.mmap.fill(0)
+        self.buffer.fill(0);
     }
 
     pub fn draw_pixel(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
@@ -58,7 +59,7 @@ impl Framebuffer {
         let anchor_pixel_index = (y * (SCREEN_WIDTH as isize) + x) * (BYTES_PER_PIXEL as isize);
         if anchor_pixel_index >= 0 && anchor_pixel_index + (BYTES_PER_PIXEL as isize) < (FRAMEBUFFER_LENGTH as isize) {
             let anchor_pixel_index = anchor_pixel_index as usize;
-            let pixel_slice = &mut self.mmap[anchor_pixel_index..anchor_pixel_index + BYTES_PER_PIXEL];
+            let pixel_slice = &mut self.buffer[anchor_pixel_index..anchor_pixel_index + BYTES_PER_PIXEL];
             pixel_slice.copy_from_slice(color);
         }
     }
@@ -82,6 +83,10 @@ impl Framebuffer {
                 }
             }
         }
+    }
+    
+    pub fn draw(&mut self) {
+        self.mmap.copy_from_slice(&self.buffer.as_slice());
     }
 }
 
@@ -120,6 +125,7 @@ pub fn run() {
 
     let mut total_simulation_time = Duration::ZERO;
     let mut total_rendering_time = Duration::ZERO;
+    let mut total_drawing_time = Duration::ZERO;
     let mut total_clearing_screen_time = Duration::ZERO;
     let mut total_input_handling_time = Duration::ZERO;
 
@@ -225,6 +231,10 @@ pub fn run() {
             }
         }
         total_rendering_time += start.elapsed();
+        
+        let start = Instant::now();
+        framebuffer.draw();
+        total_drawing_time += start.elapsed();
 
         let update_duration = update_start.elapsed();
         if DESIRED_UPDATE_DURATION.is_zero() {
@@ -233,10 +243,11 @@ pub fn run() {
         }
     }
 
-    println!("UPS: {}", ITERATIONS as u64 / engine_start_instant.elapsed().as_secs());
+    println!("UPS: {}", i as u64 / engine_start_instant.elapsed().as_secs());
     println!("Total time: {}ms", engine_start_instant.elapsed().as_millis());
     println!("Simulation time: {}ms", total_simulation_time.as_millis());
     println!("Rendering time: {}ms", total_rendering_time.as_millis());
+    println!("Drawing time: {}ms", total_drawing_time.as_millis());
     println!("Clearing screen time: {}ms", total_clearing_screen_time.as_millis());
     println!("Input handling time: {}ms", total_input_handling_time.as_millis());
     println!(
@@ -244,6 +255,7 @@ pub fn run() {
         (engine_start_instant.elapsed()
             - total_simulation_time
             - total_rendering_time
+            - total_drawing_time
             - total_input_handling_time
             - total_clearing_screen_time)
             .as_millis()

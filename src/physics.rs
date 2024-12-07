@@ -68,7 +68,7 @@ impl Particle {
                 position[i] = rng.gen_range(-100.0..100.0);
             }
             pop[i] = Self {
-                mass: 10f64,
+                mass: 1f64,
                 speed: DEFAULT_COORDINATES,
                 position,
             };
