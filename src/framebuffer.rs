@@ -28,7 +28,7 @@ const ITERATIONS: u32 = get_iterations_from_env_var!();
 const PARTICLE_SHAPE: &str = get_particle_shape_from_env_var!();
 
 struct Framebuffer {
-    mmap: MmapMut,
+    mmap: Box<MmapMut>,
     buffer: Box<[u8; FRAMEBUFFER_LENGTH]>,
 }
 
@@ -45,7 +45,7 @@ impl Framebuffer {
                 .map_mut(&file)
                 .expect("Unable to mmap framebuffer")
         };
-        Framebuffer { mmap, buffer: Box::new([0; FRAMEBUFFER_LENGTH]) }
+        Framebuffer { mmap: Box::new(mmap), buffer: Box::new([0; FRAMEBUFFER_LENGTH]) }
     }
 
     pub fn clear(&mut self) {
