@@ -65,7 +65,7 @@ impl Particle {
             position[0] = rng.gen_range((-half_width)..half_width);
             position[1] = rng.gen_range((-half_height)..half_height);
             for i in 2..DIMENSIONS {
-                position[i] = rng.gen();
+                position[i] = rng.gen_range(-100.0..100.0);
             }
             pop[i] = Self {
                 mass: 10f64,
