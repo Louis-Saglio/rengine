@@ -1,4 +1,4 @@
-use crate::physics::{apply_force, Particle, POP_SIZE};
+use crate::physics::{apply_force, Particle, DIMENSIONS, POP_SIZE};
 use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
 use rand::random;
@@ -115,7 +115,7 @@ pub fn run() {
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
     let mut clear_between_frames = true;
-    
+
     framebuffer.clear();
 
     let mut total_simulation_time = Duration::ZERO;
@@ -127,15 +127,13 @@ pub fn run() {
 
     let mut quit = false;
 
+    let mut dim_0: usize = 0;
+    let mut dim_1: usize = 1;
+
     let mut i = 0;
     loop {
-        if ITERATIONS > 0 {
-            i += 1;
-            if i == ITERATIONS {
-                break;
-            }
-        }
-        if quit {
+        i += 1;
+        if i == ITERATIONS || quit {
             break;
         }
         let update_start = Instant::now();
@@ -159,6 +157,13 @@ pub fn run() {
                                 _ => {}
                             },
                             16 => quit = true,
+                            19 => match kb_event.value {
+                                1 => {
+                                    dim_0 = (dim_0 + 1) % DIMENSIONS;
+                                    dim_1 = (dim_1 + 1) % DIMENSIONS;
+                                }
+                                _ => {}
+                            },
                             _ => {}
                         }
                     }
@@ -204,16 +209,16 @@ pub fn run() {
             }
             if PARTICLE_SHAPE == "square" {
                 framebuffer.draw_square(
-                    (particle.position[0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
-                    (particle.position[1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
+                    (particle.position[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+                    (particle.position[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
                     particle.mass.sqrt() as usize,
                     particle.mass.sqrt() as usize,
                     particle_color,
                 );
             } else {
                 framebuffer.draw_circle(
-                    (particle.position[0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
-                    (particle.position[1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
+                    (particle.position[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+                    (particle.position[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
                     particle.mass.sqrt() as usize,
                     particle_color,
                 );
