@@ -79,3 +79,13 @@ pub fn get_particle_shape_from_env_var(_input: TokenStream) -> TokenStream {
     };
     TokenStream::from(expanded)
 }
+
+#[proc_macro]
+pub fn get_default_particle_mass_from_env_var(_input: TokenStream) -> TokenStream {
+    let dim_str = option_env!("DEFAULT_PARTICLE_MASS").unwrap_or("10");
+    let dim_usize = dim_str.parse::<f64>().expect("Expected DEFAULT_PARTICLE_MASS to be f64");
+    let expanded = quote! {
+        #dim_usize
+    };
+    TokenStream::from(expanded)
+}
