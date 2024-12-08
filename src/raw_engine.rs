@@ -1,21 +1,19 @@
 use std::time::Instant;
-
+use load_env_var_as::get_iterations_from_env_var;
 use crate::physics::{apply_force, Population};
 
-pub fn run(particles: Population, iterations: u64) {
+const ITERATIONS: u32 = get_iterations_from_env_var!();
+
+pub fn run(particles: Population) {
     let mut particles = particles;
     let start = Instant::now();
-    for iteration in 0..iterations {
+    for _ in 0..ITERATIONS {
         particles = apply_force(&particles);
-        // particles = apply_force_multi_threaded(&particles);
-        if iteration % 100 == 0 {
-            println!("{iteration}")
-        }
     }
     let duration = start.elapsed();
     println!("Total time elapsed is: {:?}", duration);
-    println!("Microsec per update: {:?}", duration.as_micros() / iterations as u128);
+    println!("Microsec per update: {:?}", duration.as_micros() / ITERATIONS as u128);
     if duration.as_millis() > 0 {
-        println!("UPS: {:?}", (iterations * 1000) / duration.as_millis() as u64);
+        println!("UPS: {:?}", (ITERATIONS * 1000) / duration.as_millis() as u32);
     }
 }
