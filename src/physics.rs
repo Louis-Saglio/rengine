@@ -2,9 +2,7 @@
 
 use rand::Rng;
 
-use load_env_var_as::{
-    get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
-};
+use load_env_var_as::{get_default_particle_mass_from_env_var, get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var};
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
 
@@ -68,7 +66,7 @@ impl Particle {
                 position[i] = rng.gen_range(-100.0..100.0);
             }
             pop[i] = Self {
-                mass: 1f64,
+                mass: get_default_particle_mass_from_env_var!(),
                 speed: DEFAULT_COORDINATES,
                 position,
             };
