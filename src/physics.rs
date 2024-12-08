@@ -1,8 +1,10 @@
 // Responsible for defining newtonian physic
 
-use rand::Rng;
-
 use load_env_var_as::{get_default_particle_mass_from_env_var, get_dimensions_from_env_var, get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var};
+use rand::Rng;
+use rayon::iter::IndexedParallelIterator;
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use std::sync::Mutex;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
 
@@ -26,7 +28,6 @@ const DEFAULT_PARTICLE: Particle = Particle {
 pub type Population = [Particle; POP_SIZE];
 
 const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
-
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Particle {
@@ -154,65 +155,61 @@ pub fn apply_force(particles: &Population) -> Population {
     let mut computed_particles = *particles;
 
     // This vector will contain the pairs of particles index to merge together.
-    let mut to_merge: Vec<(usize, usize)> = Vec::new();
 
-    for particle_a_index in 0..POP_SIZE {
-        let particle_a = &particles[particle_a_index];
+    let to_merge: Mutex<Vec<(usize, usize)>> = Mutex::new(Vec::new());
 
-        // If a particle has no mass it is exactly like it does not exist
-        if particle_a.mass == 0f64 {
-            continue;
-        }
-
-        for particle_b_index in particle_a_index + 1..POP_SIZE {
-            let particle_b = &particles[particle_b_index];
+    computed_particles
+        .par_iter_mut()
+        .zip(0..POP_SIZE)
+        .for_each(|(computed_particle_a, particle_a_index)| {
+            let particle_a = &particles[particle_a_index];
 
             // If a particle has no mass it is exactly like it does not exist
-            if particle_b.mass == 0f64 {
-                continue;
+            for particle_b_index in 0..POP_SIZE {
+                let particle_b = &particles[particle_b_index];
+                // If a particle has no mass it is exactly like it does not exist
+                if particle_b.mass == 0f64 || particle_a.mass == 0f64 || particle_a_index == particle_b_index {
+                    continue;
+                }
+
+                let distance_squared = distance_squared(particle_a.position, particle_b.position);
+
+                // These variables may seem esoteric, but they were set up because benchmarks showed that
+                // they provided better performances than more natural choices
+                let g_by_d_squared = G / (distance_squared);
+                let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
+                let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
+
+                // Accelerate the two particles in all dimensions
+                for i in 0..DIMENSIONS {
+                    let direction = particle_b.position[i] - particle_a.position[i];
+                    computed_particle_a.speed[i] += direction * force_by_mass_a;
+                }
+
+                if distance_squared < MINIMAL_DISTANCE_SQUARED {
+                    to_merge.lock().unwrap().push((particle_a_index, particle_b_index));
+                }
             }
-
-            let distance_squared = distance_squared(particle_a.position, particle_b.position);
-
-            // These variables may seem esoteric, but they were set up because benchmarks showed that
-            // they provided better performances than more natural choices
-            let g_by_d_squared = G / (distance_squared);
-            let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
-            let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
-            let force_by_mass_b = particle_a.mass * g_by_d_squared * inverse_distance_square_root;
-
-            // Accelerate the two particles in all dimensions
+            // Move particle based on its speed during the previous frame
             for i in 0..DIMENSIONS {
-                let direction = particle_b.position[i] - particle_a.position[i];
-                computed_particles[particle_a_index].speed[i] += direction * force_by_mass_a;
-                computed_particles[particle_b_index].speed[i] -= direction * force_by_mass_b;
+                computed_particle_a.position[i] += particle_a.speed[i];
             }
-
-            if distance_squared < MINIMAL_DISTANCE_SQUARED {
-                to_merge.push((particle_a_index, particle_b_index));
-            }
-        }
-
-        // Move particle based on its speed during the previous frame
-        for i in 0..DIMENSIONS {
-            computed_particles[particle_a_index].position[i] += particle_a.speed[i];
-        }
-    }
+        });
 
     // Merge together particles that have to
-    for (particle_a_index, particle_b_index) in to_merge {
-        let particle_a = computed_particles[particle_a_index];
-        let particle_b = computed_particles[particle_b_index];
+    for (particle_a_index, particle_b_index) in to_merge.lock().unwrap().iter() {
+        let particle_a = computed_particles[*particle_a_index];
+        let particle_b = computed_particles[*particle_b_index];
         if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
             continue;
         }
-        computed_particles[particle_a_index].mass = 0f64;
-        computed_particles[particle_b_index].mass += particle_a.mass;
+        computed_particles[*particle_a_index].mass = 0f64;
+        computed_particles[*particle_b_index].mass += particle_a.mass;
         for i in 0..DIMENSIONS {
-            computed_particles[particle_b_index].position[i] = (particle_a.position[i] * particle_a.mass
+            computed_particles[*particle_b_index].position[i] = (particle_a.position[i] * particle_a.mass
                 + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass);
-            computed_particles[particle_b_index].speed[i] = (particle_a.speed[i] * particle_a.mass
+            computed_particles[*particle_b_index].speed[i] = (particle_a.speed[i] * particle_a.mass
                 + particle_b.speed[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         }
@@ -225,10 +222,7 @@ pub mod distributed {
     use std::sync::mpsc::{Receiver, Sender};
     use std::sync::{Arc, Mutex};
 
-    use crate::physics::{
-        distance_squared, Coordinates, Population, DEFAULT_COORDINATES, DIMENSIONS, G,
-        POP_SIZE,
-    };
+    use crate::physics::{distance_squared, Coordinates, Population, DEFAULT_COORDINATES, DIMENSIONS, G, POP_SIZE};
 
     const NBR_OF_POSSIBLE_PARTICLE_PAIRS: usize = (POP_SIZE as f64 * ((POP_SIZE - 1) as f64 / 2f64)) as usize;
 
@@ -310,7 +304,7 @@ pub mod distributed {
                 computed_particles[particle_a_index].speed[i] += particle_a_acc[i];
                 computed_particles[particle_b_index].speed[i] += particle_b_acc[i];
             }
-        };
+        }
         // return computed_particles;
     }
 }
