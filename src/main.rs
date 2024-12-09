@@ -1,17 +1,13 @@
-use rengine::build_variant::{
-    BENCHMARK_BV, BENCHMARK_MULTI_THREAD_BV, BUILD_VARIANT, DEMO_BV, FRAMEBUFFER_BENCHMARK_BV, FRAMEBUFFER_BV, TEST_BV,
-};
+use rengine::build_variant::{BENCHMARK_BV, BUILD_VARIANT, DEMO_BV, FRAMEBUFFER_BENCHMARK_BV, FRAMEBUFFER_BV, TEST_BV};
 use rengine::graphical_engine;
 use rengine::physics::Particle;
 use std::time::Instant;
 
 use rengine::framebuffer;
-use rengine::{multi_threaded_raw_engine, raw_engine};
+use rengine::raw_engine;
 
 fn main() {
-    if BUILD_VARIANT == BENCHMARK_MULTI_THREAD_BV {
-        multi_threaded_raw_engine::run(10000);
-    } else if BUILD_VARIANT == BENCHMARK_BV {
+    if BUILD_VARIANT == BENCHMARK_BV {
         raw_engine::run(Particle::new_random_pop());
     } else if BUILD_VARIANT == TEST_BV || BUILD_VARIANT == DEMO_BV {
         graphical_engine::run();
