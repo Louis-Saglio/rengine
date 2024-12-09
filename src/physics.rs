@@ -167,30 +167,35 @@ pub fn apply_force(particles: &Population) -> Population {
         .for_each(|(computed_particle_a, particle_a_index)| {
             let particle_a = &particles[particle_a_index];
 
-            // If a particle has no mass it is exactly like it does not exist
-            for particle_b_index in 0..POP_SIZE {
-                let particle_b = &particles[particle_b_index];
+            if particle_a.mass != 0f64 {
                 // If a particle has no mass it is exactly like it does not exist
-                if particle_b.mass == 0f64 || particle_a.mass == 0f64 || particle_a_index == particle_b_index {
-                    continue;
-                }
+                for particle_b_index in 0..POP_SIZE {
+                    let particle_b = &particles[particle_b_index];
+                    // If a particle has no mass it is exactly like it does not exist
+                    if particle_b.mass == 0f64 || particle_a_index == particle_b_index {
+                        continue;
+                    }
 
-                let distance_squared = distance_squared(particle_a.position, particle_b.position);
+                    let distance_squared = distance_squared(particle_a.position, particle_b.position);
 
-                // These variables may seem esoteric, but they were set up because benchmarks showed that
-                // they provided better performances than more natural choices
-                let g_by_d_squared = G / (distance_squared);
-                let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
-                let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
+                    // These variables may seem esoteric, but they were set up because benchmarks showed that
+                    // they provided better performances than more natural choices
+                    let g_by_d_squared = G / (distance_squared);
+                    let inverse_distance_square_root = 1f64 / distance_squared.sqrt();
+                    let force_by_mass_a = particle_b.mass * g_by_d_squared * inverse_distance_square_root;
 
-                // Accelerate the two particles in all dimensions
-                for i in 0..DIMENSIONS {
-                    let direction = particle_b.position[i] - particle_a.position[i];
-                    computed_particle_a.speed[i] += direction * force_by_mass_a;
-                }
+                    // Accelerate the two particles in all dimensions
+                    for i in 0..DIMENSIONS {
+                        let direction = particle_b.position[i] - particle_a.position[i];
+                        computed_particle_a.speed[i] += direction * force_by_mass_a;
+                    }
 
-                if distance_squared < MINIMAL_DISTANCE_SQUARED {
-                    to_merge.lock().unwrap().push((particle_a_index, particle_b_index));
+                    if distance_squared < MINIMAL_DISTANCE_SQUARED {
+                        to_merge
+                            .lock()
+                            .expect("Critical unrecoverable failure when registering particles to merge")
+                            .push((particle_a_index, particle_b_index));
+                    }
                 }
             }
             // Move particle based on its speed during the previous frame
@@ -200,7 +205,11 @@ pub fn apply_force(particles: &Population) -> Population {
         });
 
     // Merge together particles that have to
-    for (particle_a_index, particle_b_index) in to_merge.lock().unwrap().iter() {
+    for (particle_a_index, particle_b_index) in to_merge
+        .lock()
+        .expect("Critical unrecoverable failure when merging particles")
+        .iter()
+    {
         let particle_a = computed_particles[*particle_a_index];
         let particle_b = computed_particles[*particle_b_index];
         if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
@@ -231,17 +240,17 @@ pub mod test {
             Particle {
                 mass: 3f64,
                 speed: [0f64, 0f64],
-                position: [10f64, 10f64]
+                position: [10f64, 10f64],
             },
             Particle {
                 mass: 2f64,
                 speed: [0f64, 0f64],
-                position: [-10f64, -10f64]
+                position: [-10f64, -10f64],
             },
             Particle {
                 mass: 1f64,
                 speed: [0f64, 0f64],
-                position: [10f64, -10f64]
+                position: [10f64, -10f64],
             },
         ];
         for _ in 0..100 {
