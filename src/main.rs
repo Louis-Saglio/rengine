@@ -8,7 +8,7 @@ use rengine::raw_engine;
 
 fn main() {
     if BUILD_VARIANT == BENCHMARK_BV {
-        raw_engine::run(Particle::new_random_pop());
+        raw_engine::run(Particle::new_random_pop_in_screen(1920, 1080));
     } else if BUILD_VARIANT == TEST_BV || BUILD_VARIANT == DEMO_BV {
         graphical_engine::run();
     } else if BUILD_VARIANT == FRAMEBUFFER_BV {
