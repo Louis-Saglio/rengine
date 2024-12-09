@@ -16,4 +16,4 @@ clear screen only when enough time passed since the last clear screen
 
 move pop initialization out of physics
 
-improve parallel calculations by using par_iter_mut on an iterable of all the possible particles pairs
+try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
