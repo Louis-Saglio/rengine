@@ -7,6 +7,7 @@ use load_env_var_as::{
 use rand::Rng;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use std::array;
 use std::sync::Mutex;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
@@ -158,8 +159,8 @@ pub fn apply_force(particles: &Population) -> Population {
     let mut computed_particles = *particles;
 
     // This vector will contain the pairs of particles index to merge together.
-
-    let to_merge: Mutex<Vec<(usize, usize)>> = Mutex::new(Vec::new());
+    let mut to_merge = Vec::new();
+    let to_merge_mutex: Mutex<&mut Vec<(usize, usize)>> = Mutex::new(&mut to_merge);
 
     computed_particles
         .par_iter_mut()
@@ -191,10 +192,10 @@ pub fn apply_force(particles: &Population) -> Population {
                     }
 
                     if distance_squared < MINIMAL_DISTANCE_SQUARED {
-                        to_merge
+                        let mut to_merge = to_merge_mutex
                             .lock()
-                            .expect("Critical unrecoverable failure when registering particles to merge")
-                            .push((particle_a_index, particle_b_index));
+                            .expect("Critical unrecoverable failure when registering particles to merge");
+                        to_merge.push((particle_a_index, particle_b_index));
                     }
                 }
             }
@@ -204,27 +205,27 @@ pub fn apply_force(particles: &Population) -> Population {
             }
         });
 
-    // Merge together particles that have to
-    for (particle_a_index, particle_b_index) in to_merge
-        .lock()
-        .expect("Critical unrecoverable failure when merging particles")
-        .iter()
-    {
+    for (particle_a_index, particle_b_index) in to_merge.iter() {
         let particle_a = computed_particles[*particle_a_index];
         let particle_b = computed_particles[*particle_b_index];
         if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
             continue;
         }
-        computed_particles[*particle_a_index].mass = 0f64;
-        computed_particles[*particle_b_index].mass += particle_a.mass;
-        for i in 0..DIMENSIONS {
-            computed_particles[*particle_b_index].position[i] = (particle_a.position[i] * particle_a.mass
-                + particle_b.position[i] * particle_b.mass)
-                / (particle_a.mass + particle_b.mass);
-            computed_particles[*particle_b_index].speed[i] = (particle_a.speed[i] * particle_a.mass
-                + particle_b.speed[i] * particle_b.mass)
+        let (index_to_fuse, index_to_delete) = if particle_a.mass > particle_b.mass {
+            (*particle_a_index, *particle_b_index)
+        } else {
+            (*particle_b_index, *particle_a_index)
+        };
+        computed_particles[index_to_delete].mass = 0f64;
+        computed_particles[index_to_fuse].mass = particle_a.mass + particle_b.mass;
+        computed_particles[index_to_fuse].position = array::from_fn(|i| {
+            (particle_a.position[i] * particle_a.mass + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
-        }
+        });
+        computed_particles[index_to_fuse].speed = array::from_fn(|i| {
+            (particle_a.speed[i] * particle_a.mass + particle_b.speed[i] * particle_b.mass)
+                / (particle_a.mass + particle_b.mass)
+        });
     }
 
     computed_particles
