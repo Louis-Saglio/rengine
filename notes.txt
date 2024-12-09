@@ -15,3 +15,5 @@ verify that rengine has enough stack
 clear screen only when enough time passed since the last clear screen
 
 move pop initialization out of physics
+
+improve parallel calculations by using par_iter_mut on an iterable of all the possible particles pairs
