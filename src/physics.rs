@@ -160,24 +160,23 @@ pub struct ApplyForceContext {
 
 pub fn apply_force(context: &mut ApplyForceContext) {
     // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
-    // todo: should mutate the original, and use the copy as src for computations
-    let mut computed_particles = context.population;
-    let particles = &context.population;
+    let previous_population = context.population;
+    let new_population = &mut context.population;
 
     // This vector will contain the pairs of particles index to merge together.
     let mut to_merge = Vec::new();
     let to_merge_mutex: Mutex<&mut Vec<(usize, usize)>> = Mutex::new(&mut to_merge);
 
-    computed_particles
+    new_population
         .par_iter_mut()
         .zip(0..POP_SIZE)
         .for_each(|(computed_particle_a, particle_a_index)| {
-            let particle_a = &particles[particle_a_index];
+            let particle_a = &previous_population[particle_a_index];
 
             if particle_a.mass != 0f64 {
                 // If a particle has no mass it is exactly like it does not exist
                 for particle_b_index in 0..POP_SIZE {
-                    let particle_b = &particles[particle_b_index];
+                    let particle_b = &previous_population[particle_b_index];
                     // If a particle has no mass it is exactly like it does not exist
                     if particle_b.mass == 0f64 || particle_a_index == particle_b_index {
                         continue;
@@ -212,8 +211,8 @@ pub fn apply_force(context: &mut ApplyForceContext) {
         });
 
     for (particle_a_index, particle_b_index) in to_merge.iter() {
-        let particle_a = computed_particles[*particle_a_index];
-        let particle_b = computed_particles[*particle_b_index];
+        let particle_a = new_population[*particle_a_index];
+        let particle_b = new_population[*particle_b_index];
         if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
             continue;
         }
@@ -222,19 +221,17 @@ pub fn apply_force(context: &mut ApplyForceContext) {
         } else {
             (*particle_b_index, *particle_a_index)
         };
-        computed_particles[index_to_delete].mass = 0f64;
-        computed_particles[index_to_fuse].mass = particle_a.mass + particle_b.mass;
-        computed_particles[index_to_fuse].position = array::from_fn(|i| {
+        new_population[index_to_delete].mass = 0f64;
+        new_population[index_to_fuse].mass = particle_a.mass + particle_b.mass;
+        new_population[index_to_fuse].position = array::from_fn(|i| {
             (particle_a.position[i] * particle_a.mass + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
-        computed_particles[index_to_fuse].speed = array::from_fn(|i| {
+        new_population[index_to_fuse].speed = array::from_fn(|i| {
             (particle_a.speed[i] * particle_a.mass + particle_b.speed[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
     }
-
-    context.population = computed_particles;
 }
 
 #[cfg(test)]
