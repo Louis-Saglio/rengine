@@ -7,7 +7,7 @@ use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::time::Instant;
 
-use crate::physics::{apply_force, ApplyForceContext, Particle, Population};
+use crate::physics::{apply_force, ApplyForceContext, Particle};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
