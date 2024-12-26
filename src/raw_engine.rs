@@ -1,14 +1,14 @@
 use std::time::Instant;
 use load_env_var_as::get_iterations_from_env_var;
-use crate::physics::{apply_force, Population};
+use crate::physics::{apply_force, ApplyForceContext, Population};
 
 const ITERATIONS: u32 = get_iterations_from_env_var!();
 
 pub fn run(particles: Population) {
-    let mut particles = particles;
+    let mut context = ApplyForceContext { population: particles };
     let start = Instant::now();
     for _ in 0..ITERATIONS {
-        particles = apply_force(&particles);
+        apply_force(&mut context);
     }
     let duration = start.elapsed();
     println!("Total time elapsed is: {:?}", duration);

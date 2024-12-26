@@ -154,9 +154,15 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
     }
 }
 
-pub fn apply_force(particles: &Population) -> Population {
+pub struct ApplyForceContext {
+    pub population: Population,
+}
+
+pub fn apply_force(context: &mut ApplyForceContext) {
     // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
-    let mut computed_particles = *particles;
+    // todo: should mutate the original, and use the copy as src for computations
+    let mut computed_particles = context.population;
+    let particles = &context.population;
 
     // This vector will contain the pairs of particles index to merge together.
     let mut to_merge = Vec::new();
@@ -228,7 +234,7 @@ pub fn apply_force(particles: &Population) -> Population {
         });
     }
 
-    computed_particles
+    context.population = computed_particles;
 }
 
 #[cfg(test)]
