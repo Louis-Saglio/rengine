@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-use std::time::Instant;
 use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 use piston_window::{
     clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
     WindowSettings,
 };
 use rand::{thread_rng, Rng};
+use std::collections::HashMap;
+use std::time::Instant;
 
-use crate::physics::{apply_force, Particle, Population};
+use crate::physics::{apply_force, ApplyForceContext, Particle, Population};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -55,12 +55,12 @@ impl GraphicalCoordinatesCalculator {
 }
 
 struct Engine {
-    particles: Population,
+    context: ApplyForceContext,
     graphical_coordinates_calculator: GraphicalCoordinatesCalculator,
-    fps: f64, // Added FPS field
+    fps: f64,                 // Added FPS field
     last_frame_time: Instant, // Track the last frame time
     ups: f64,
-    last_update_time: Instant
+    last_update_time: Instant,
 }
 
 impl Engine {
@@ -69,7 +69,7 @@ impl Engine {
             clear([0.0, 0.0, 0.0, 1.0], graphics);
             // self.graphical_coordinates_calculator.must_clear_screen = false;
         }
-        for (index, particle) in self.particles.iter().enumerate() {
+        for (index, particle) in self.context.population.iter().enumerate() {
             if particle.mass == 0f64 {
                 continue;
             }
@@ -88,7 +88,7 @@ impl Engine {
     }
 
     fn update(&mut self) {
-        self.particles = apply_force(&self.particles);
+        apply_force(&mut self.context);
         self.update_ups();
     }
 
@@ -130,7 +130,7 @@ pub fn run() {
     };
 
     let mut engine = Engine {
-        particles,
+        context: ApplyForceContext { population: particles },
         graphical_coordinates_calculator: GraphicalCoordinatesCalculator {
             window_size: [width, height],
             zoom_level: 1f64,
@@ -141,7 +141,7 @@ pub fn run() {
         fps: 0.0,
         last_frame_time: Instant::now(),
         ups: 0.0,
-        last_update_time: Instant::now()
+        last_update_time: Instant::now(),
     };
 
     while let Some(event) = window.next() {
@@ -169,7 +169,8 @@ pub fn run() {
             },
             Event::Loop(Loop::Render(_)) => {
                 let nbr = engine
-                    .particles
+                    .context
+                    .population
                     .iter()
                     .filter(|&particle| particle.mass != 0f64)
                     .count();

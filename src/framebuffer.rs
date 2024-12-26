@@ -1,4 +1,4 @@
-use crate::physics::{apply_force, Particle, DIMENSIONS, POP_SIZE};
+use crate::physics::{apply_force, ApplyForceContext, Particle, DIMENSIONS, POP_SIZE};
 use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
 use rand::random;
@@ -114,7 +114,6 @@ pub fn run() {
 
     let mut framebuffer = Framebuffer::new();
 
-    let mut population = Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
     let particles_colors: [[u8; BYTES_PER_PIXEL]; POP_SIZE] = array::from_fn(|_| random());
 
     let mut zoom: f64 = 1.0;
@@ -135,6 +134,10 @@ pub fn run() {
 
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
+    
+    let mut context = ApplyForceContext {
+        population: Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
+    }; 
 
     let mut i = 0;
     loop {
@@ -199,7 +202,7 @@ pub fn run() {
         total_input_handling_time += start.elapsed();
 
         let start = Instant::now();
-        population = apply_force(&population);
+        apply_force(&mut context);
         total_simulation_time += start.elapsed();
 
         let start = Instant::now();
@@ -209,7 +212,7 @@ pub fn run() {
         total_clearing_screen_time += start.elapsed();
 
         let start = Instant::now();
-        for (particle, particle_color) in population.iter().zip(particles_colors.iter()) {
+        for (particle, particle_color) in context.population.iter().zip(particles_colors.iter()) {
             if particle.mass == 0.0 {
                 continue;
             }
