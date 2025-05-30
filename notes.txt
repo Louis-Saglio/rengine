@@ -17,3 +17,5 @@ clear screen only when enough time passed since the last clear screen
 move pop initialization out of physics
 
 try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
+
+ffmpeg -f fbdev -framerate 25 -i /dev/fb0 -vf format=bgr0 -f sdl "Framebuffer Display"
