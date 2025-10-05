@@ -63,14 +63,14 @@ impl Particle {
         let mut pop = DEFAULT_POP;
         let half_width = width as f64 / 2f64;
         let half_height = height as f64 / 2f64;
-        for i in 0..POP_SIZE {
+        for slot in pop.iter_mut() {
             let mut position = DEFAULT_COORDINATES;
             position[0] = rng.random_range((-half_width)..half_width);
             position[1] = rng.random_range((-half_height)..half_height);
-            for i in 2..DIMENSIONS {
-                position[i] = rng.random_range(-100.0..100.0);
+            for position in position.iter_mut().skip(2) {
+                *position = rng.random_range(-100.0..100.0);
             }
-            pop[i] = Self {
+            *slot = Self {
                 mass: get_default_particle_mass_from_env_var!(),
                 speed: DEFAULT_COORDINATES,
                 position,
@@ -80,7 +80,7 @@ impl Particle {
     }
 
     pub fn new_test_pop() -> Population {
-        let mut pop = DEFAULT_POP.clone();
+        let mut pop = DEFAULT_POP;
         if POP_SIZE < 3 {
             panic!("POP_SIZE must be 3 for test")
         } else if DIMENSIONS != 2 {
@@ -175,8 +175,7 @@ pub fn apply_force(context: &mut ApplyForceContext) {
 
             if particle_a.mass != 0f64 {
                 // If a particle has no mass it is exactly like it does not exist
-                for particle_b_index in 0..POP_SIZE {
-                    let particle_b = &previous_population[particle_b_index];
+                for (particle_b_index, particle_b) in previous_population.iter().enumerate() {
                     // If a particle has no mass it is exactly like it does not exist
                     if particle_b.mass == 0f64 || particle_a_index == particle_b_index {
                         continue;

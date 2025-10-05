@@ -89,7 +89,7 @@ impl Framebuffer {
     }
 
     pub fn draw(&mut self) {
-        self.mmap.copy_from_slice(&self.buffer.as_slice());
+        self.mmap.copy_from_slice(self.buffer.as_slice());
     }
 }
 
@@ -152,55 +152,49 @@ pub fn run() {
 
         let start = Instant::now();
         let mut kb_buffer = vec![0u8; 24];
-        match kb_file.read(&mut kb_buffer) {
-            Ok(_) => {
-                for chunk in kb_buffer.chunks_exact(24) {
-                    let mut i = [0u8; 24];
-                    i.copy_from_slice(chunk);
-                    let kb_event: InputEvent = unsafe { transmute(i) };
-                    if kb_event.type_ == 1 {
-                        match kb_event.code {
-                            105 => shift.0 += 10,
-                            106 => shift.0 -= 10,
-                            103 => shift.1 += 10,
-                            108 => shift.1 -= 10,
-                            20 => match kb_event.value {
-                                1 => clear_between_frames = !clear_between_frames,
-                                _ => {}
-                            },
-                            16 => quit = true,
-                            19 => match kb_event.value {
-                                1 => {
-                                    dim_0 = (dim_0 + 1) % DIMENSIONS;
-                                    dim_1 = (dim_1 + 1) % DIMENSIONS;
-                                }
-                                _ => {}
-                            },
-                            _ => {}
+        if kb_file.read(&mut kb_buffer).is_ok() {
+            for chunk in kb_buffer.chunks_exact(24) {
+                let mut i = [0u8; 24];
+                i.copy_from_slice(chunk);
+                let kb_event: InputEvent = unsafe { transmute(i) };
+                if kb_event.type_ == 1 {
+                    match kb_event.code {
+                        105 => shift.0 += 10,
+                        106 => shift.0 -= 10,
+                        103 => shift.1 += 10,
+                        108 => shift.1 -= 10,
+                        20 => {
+                            if kb_event.value == 1 {
+                                clear_between_frames = !clear_between_frames
+                            }
                         }
+                        16 => quit = true,
+                        19 => {
+                            if kb_event.value == 1 {
+                                dim_0 = (dim_0 + 1) % DIMENSIONS;
+                                dim_1 = (dim_1 + 1) % DIMENSIONS;
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
-            Err(_) => {}
         }
 
         let mut mouse_buffer = vec![0u8; 24];
-        match mouse_file.read(&mut mouse_buffer) {
-            Ok(_) => {
-                for chunk in mouse_buffer.chunks_exact(24) {
-                    let mut i = [0u8; 24];
-                    i.copy_from_slice(chunk);
-                    let mouse_event: InputEvent = unsafe { transmute(i) };
-                    if mouse_event.type_ == 2 && mouse_event.code == 8 {
-                        match mouse_event.value {
-                            1 => zoom *= 1.1,
-                            -1 => zoom *= 0.9,
-                            _ => {}
-                        }
+        if mouse_file.read(&mut mouse_buffer).is_ok() {
+            for chunk in mouse_buffer.chunks_exact(24) {
+                let mut i = [0u8; 24];
+                i.copy_from_slice(chunk);
+                let mouse_event: InputEvent = unsafe { transmute(i) };
+                if mouse_event.type_ == 2 && mouse_event.code == 8 {
+                    match mouse_event.value {
+                        1 => zoom *= 1.1,
+                        -1 => zoom *= 0.9,
+                        _ => {}
                     }
                 }
             }
-            Err(_) => {}
         }
         total_input_handling_time += start.elapsed();
 
