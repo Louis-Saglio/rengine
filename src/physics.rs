@@ -33,7 +33,7 @@ pub type Population = [Particle; POP_SIZE];
 
 const DEFAULT_POP: Population = [DEFAULT_PARTICLE; POP_SIZE];
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct Particle {
     pub mass: f64,
     pub speed: Coordinates,

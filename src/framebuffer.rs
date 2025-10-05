@@ -102,7 +102,7 @@ struct InputEvent {
     value: i32,
 }
 
-pub fn run(mut population: Population) {
+pub fn run(population: &mut Population) {
     let mut kb_file = OpenOptions::new()
         .read(true)
         .custom_flags(0x800)
@@ -195,7 +195,7 @@ pub fn run(mut population: Population) {
         total_input_handling_time += start.elapsed();
 
         let start = Instant::now();
-        apply_force(&mut population);
+        apply_force(population);
         total_simulation_time += start.elapsed();
 
         let start = Instant::now();
@@ -255,5 +255,5 @@ pub fn run(mut population: Population) {
             - total_input_handling_time
             - total_clearing_screen_time)
             .as_millis()
-    )
+    );
 }
