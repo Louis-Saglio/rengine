@@ -3,7 +3,7 @@ use quote::quote;
 
 #[proc_macro]
 pub fn get_dimensions_from_env_var(_input: TokenStream) -> TokenStream {
-    let dim_str = option_env!("DIMENSIONS").unwrap_or("2");
+    let dim_str = option_env!("DIMENSIONS").unwrap_or("5");
     let dim_usize = dim_str.parse::<usize>().expect("Expected DIMENSIONS to be usize");
     let expanded = quote! {
         #dim_usize
@@ -53,7 +53,7 @@ pub fn get_minimal_distance_from_env_var(_input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn get_iterations_from_env_var(_input: TokenStream) -> TokenStream {
-    let dim_str = option_env!("ITERATIONS").unwrap_or("0");
+    let dim_str = option_env!("ITERATIONS").unwrap_or("1000");
     let dim_usize = dim_str.parse::<u32>().expect("Expected ITERATIONS to be u32");
     let expanded = quote! {
         #dim_usize
@@ -83,7 +83,9 @@ pub fn get_particle_shape_from_env_var(_input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn get_default_particle_mass_from_env_var(_input: TokenStream) -> TokenStream {
     let dim_str = option_env!("DEFAULT_PARTICLE_MASS").unwrap_or("10");
-    let dim_usize = dim_str.parse::<f64>().expect("Expected DEFAULT_PARTICLE_MASS to be f64");
+    let dim_usize = dim_str
+        .parse::<f64>()
+        .expect("Expected DEFAULT_PARTICLE_MASS to be f64");
     let expanded = quote! {
         #dim_usize
     };

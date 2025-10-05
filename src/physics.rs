@@ -236,7 +236,7 @@ pub fn apply_force(context: &mut ApplyForceContext) {
 
 #[cfg(test)]
 pub mod test {
-    use crate::physics::{apply_force, Particle, Population};
+    use crate::physics::{Particle, Population, apply_force};
 
     #[test]
     fn test_apply_force() {

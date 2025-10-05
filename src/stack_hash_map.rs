@@ -1,6 +1,6 @@
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hash, Hasher};
-use std::mem::{transmute_copy, MaybeUninit};
+use std::mem::{MaybeUninit, transmute_copy};
 
 const STACK_HASH_MAP_SIZE: usize = 100;
 
