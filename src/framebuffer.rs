@@ -1,4 +1,4 @@
-use crate::physics::{apply_force, ApplyForceContext, Particle, DIMENSIONS, POP_SIZE};
+use crate::physics::{ApplyForceContext, DIMENSIONS, POP_SIZE, Particle, apply_force};
 use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
 use rand::random;
@@ -11,8 +11,8 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 const BYTES_PER_PIXEL: usize = 4;
-const SCREEN_WIDTH: usize = 1920;
-const SCREEN_HEIGHT: usize = 1080;
+const SCREEN_WIDTH: usize = 2560;
+const SCREEN_HEIGHT: usize = 1440;
 
 const FRAMEBUFFER_LENGTH: usize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
 
@@ -29,7 +29,7 @@ const PARTICLE_SHAPE: &str = get_particle_shape_from_env_var!();
 
 struct Framebuffer {
     mmap: Box<MmapMut>,
-    buffer: Box<[u8; FRAMEBUFFER_LENGTH]>,
+    buffer: Vec<u8>,
 }
 
 impl Framebuffer {
@@ -45,7 +45,10 @@ impl Framebuffer {
                 .map_mut(&file)
                 .expect("Unable to mmap framebuffer")
         };
-        Framebuffer { mmap: Box::new(mmap), buffer: Box::new([0; FRAMEBUFFER_LENGTH]) }
+        Framebuffer {
+            mmap: Box::new(mmap),
+            buffer: vec![0; FRAMEBUFFER_LENGTH],
+        }
     }
 
     pub fn clear(&mut self) {
@@ -84,7 +87,7 @@ impl Framebuffer {
             }
         }
     }
-    
+
     pub fn draw(&mut self) {
         self.mmap.copy_from_slice(&self.buffer.as_slice());
     }
@@ -134,10 +137,10 @@ pub fn run() {
 
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
-    
+
     let mut context = ApplyForceContext {
-        population: Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
-    }; 
+        population: Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32),
+    };
 
     let mut i = 0;
     loop {
@@ -234,7 +237,7 @@ pub fn run() {
             }
         }
         total_rendering_time += start.elapsed();
-        
+
         let start = Instant::now();
         framebuffer.draw();
         total_drawing_time += start.elapsed();

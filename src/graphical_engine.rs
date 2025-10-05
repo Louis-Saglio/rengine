@@ -1,13 +1,12 @@
-use crate::build_variant::{BUILD_VARIANT, DEMO_BV, TEST_BV};
 use piston_window::{
-    clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
-    WindowSettings,
+    Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed, WindowSettings, clear,
+    ellipse, text,
 };
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use std::collections::HashMap;
 use std::time::Instant;
 
-use crate::physics::{apply_force, ApplyForceContext, Particle};
+use crate::physics::{ApplyForceContext, Particle, Population, apply_force};
 
 struct GraphicalCoordinatesCalculator {
     window_size: [u32; 2],
@@ -107,7 +106,7 @@ impl Engine {
     }
 }
 
-pub fn run() {
+pub fn run(particles: Population) {
     let width = 1900;
     let height = 1000;
     let mut window: PistonWindow = WindowSettings::new("Rengine", [width, height])
@@ -120,14 +119,6 @@ pub fn run() {
     let mut glyphs = window
         .load_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf")
         .unwrap();
-
-    let particles = if BUILD_VARIANT == TEST_BV {
-        Particle::new_test_pop()
-    } else if BUILD_VARIANT == DEMO_BV {
-        Particle::new_random_pop_in_screen(width, height)
-    } else {
-        Particle::new_random_pop()
-    };
 
     let mut engine = Engine {
         context: ApplyForceContext { population: particles },

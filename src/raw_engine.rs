@@ -1,6 +1,6 @@
-use std::time::Instant;
+use crate::physics::{ApplyForceContext, Population, apply_force};
 use load_env_var_as::get_iterations_from_env_var;
-use crate::physics::{apply_force, ApplyForceContext, Population};
+use std::time::Instant;
 
 const ITERATIONS: u32 = get_iterations_from_env_var!();
 
