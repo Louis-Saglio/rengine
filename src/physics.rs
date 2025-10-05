@@ -156,14 +156,12 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
 
 pub fn apply_force(population: &mut Population) {
     let previous_population = *population;
-    // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
-    let new_population = population;
 
     // This vector will contain the pairs of particles index to merge together.
     let mut to_merge = Vec::new();
     let to_merge_mutex: Mutex<&mut Vec<(usize, usize)>> = Mutex::new(&mut to_merge);
 
-    new_population
+    population
         .par_iter_mut()
         .zip(0..POP_SIZE)
         .for_each(|(computed_particle_a, particle_a_index)| {
@@ -205,8 +203,8 @@ pub fn apply_force(population: &mut Population) {
         });
 
     for (particle_a_index, particle_b_index) in to_merge.iter() {
-        let particle_a = new_population[*particle_a_index];
-        let particle_b = new_population[*particle_b_index];
+        let particle_a = population[*particle_a_index];
+        let particle_b = population[*particle_b_index];
         if particle_a.mass == 0f64 || particle_b.mass == 0f64 {
             continue;
         }
@@ -215,13 +213,13 @@ pub fn apply_force(population: &mut Population) {
         } else {
             (*particle_b_index, *particle_a_index)
         };
-        new_population[index_to_delete].mass = 0f64;
-        new_population[index_to_fuse].mass = particle_a.mass + particle_b.mass;
-        new_population[index_to_fuse].position = array::from_fn(|i| {
+        population[index_to_delete].mass = 0f64;
+        population[index_to_fuse].mass = particle_a.mass + particle_b.mass;
+        population[index_to_fuse].position = array::from_fn(|i| {
             (particle_a.position[i] * particle_a.mass + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
-        new_population[index_to_fuse].speed = array::from_fn(|i| {
+        population[index_to_fuse].speed = array::from_fn(|i| {
             (particle_a.speed[i] * particle_a.mass + particle_b.speed[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
