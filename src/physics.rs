@@ -155,8 +155,8 @@ pub fn distance_squared(a: Coordinates, b: Coordinates) -> f64 {
 }
 
 pub fn apply_force(population: &mut Population) {
-    // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
     let previous_population = *population;
+    // We are going to mutate the particles stored in this array to register the changes in acceleration and speed
     let new_population = population;
 
     // This vector will contain the pairs of particles index to merge together.
@@ -170,7 +170,6 @@ pub fn apply_force(population: &mut Population) {
             let particle_a = &previous_population[particle_a_index];
 
             if particle_a.mass != 0f64 {
-                // If a particle has no mass it is exactly like it does not exist
                 for (particle_b_index, particle_b) in previous_population.iter().enumerate() {
                     // If a particle has no mass it is exactly like it does not exist
                     if particle_b.mass == 0f64 || particle_a_index == particle_b_index {
