@@ -1,0 +1,46 @@
+BUILD_VARIANT=FRAMEBUFFER
+DIMENSIONS=3
+POP_SIZE=1000
+G=1
+MINIMAL_DISTANCE=3
+ITERATIONS=10000
+DESIRED_UPS=0
+PARTICLE_SHAPE=circle
+DEFAULT_PARTICLE_MASS=10
+
+
+UPS: 909
+Total time: 11681ms
+Simulation time: 2383ms
+Rendering time: 526ms
+Drawing time: 6378ms
+Clearing screen time: 2366ms
+Input handling time: 20ms
+Unaccounted time: 6ms
+
+UPS: 909
+Total time: 11860ms
+Simulation time: 2461ms
+Rendering time: 533ms
+Drawing time: 6449ms
+Clearing screen time: 2394ms
+Input handling time: 17ms
+Unaccounted time: 4ms
+
+UPS: 909
+Total time: 11927ms
+Simulation time: 2555ms
+Rendering time: 540ms
+Drawing time: 6432ms
+Clearing screen time: 2375ms
+Input handling time: 18ms
+Unaccounted time: 5ms
+
+UPS: 909
+Total time: 11837ms
+Simulation time: 2367ms
+Rendering time: 533ms
+Drawing time: 6500ms
+Clearing screen time: 2410ms
+Input handling time: 18ms
+Unaccounted time: 6ms
