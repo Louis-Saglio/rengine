@@ -3,7 +3,7 @@ use piston_window::{
     clear, ellipse, text, Button, Context, Event, EventLoop, G2d, Input, Key, Loop, Motion, PistonWindow, Transformed,
     WindowSettings,
 };
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -46,9 +46,9 @@ impl GraphicalCoordinatesCalculator {
 
     fn get_particle_color(&mut self, particle_id: u64) -> [f64; 3] {
         if !self.color_by_particle_id.contains_key(&particle_id) {
-            let mut rng = thread_rng();
+            let mut rng = rng();
             self.color_by_particle_id
-                .insert(particle_id, [rng.gen(), rng.gen(), rng.gen()]);
+                .insert(particle_id, [rng.random(), rng.random(), rng.random()]);
         };
         self.color_by_particle_id[&particle_id]
     }

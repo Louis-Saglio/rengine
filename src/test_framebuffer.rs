@@ -7,5 +7,4 @@ pub fn test_framebuffer() {
     file.read_exact(&mut framebuffer).unwrap();
     let result = framebuffer.into_iter().map(|it| it as u128).sum::<u128>();
     println!("Result: {}", result);
-    ()
 }
