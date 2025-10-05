@@ -1,4 +1,4 @@
-use crate::physics::{ApplyForceContext, DIMENSIONS, POP_SIZE, Particle, apply_force};
+use crate::physics::{DIMENSIONS, POP_SIZE, Population, apply_force};
 use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
 use rand::random;
@@ -102,17 +102,17 @@ struct InputEvent {
     value: i32,
 }
 
-pub fn run() {
+pub fn run(mut population: Population) {
     let mut kb_file = OpenOptions::new()
         .read(true)
         .custom_flags(0x800)
-        .open("/dev/input/event10")
+        .open("/dev/input/event4")
         .expect("Unable to open keyboard device");
 
     let mut mouse_file = OpenOptions::new()
         .read(true)
         .custom_flags(0x800)
-        .open("/dev/input/event8")
+        .open("/dev/input/event2")
         .expect("Unable to open mouse device");
 
     let mut framebuffer = Framebuffer::new();
@@ -138,10 +138,6 @@ pub fn run() {
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
 
-    let mut context = ApplyForceContext {
-        population: Particle::new_random_pop_in_screen(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32),
-    };
-
     let mut i = 0;
     loop {
         i += 1;
@@ -154,9 +150,9 @@ pub fn run() {
         let mut kb_buffer = vec![0u8; 24];
         if kb_file.read(&mut kb_buffer).is_ok() {
             for chunk in kb_buffer.chunks_exact(24) {
-                let mut i = [0u8; 24];
-                i.copy_from_slice(chunk);
-                let kb_event: InputEvent = unsafe { transmute(i) };
+                let mut event_bytes = [0u8; 24];
+                event_bytes.copy_from_slice(chunk);
+                let kb_event: InputEvent = unsafe { transmute(event_bytes) };
                 if kb_event.type_ == 1 {
                     match kb_event.code {
                         105 => shift.0 += 10,
@@ -184,9 +180,9 @@ pub fn run() {
         let mut mouse_buffer = vec![0u8; 24];
         if mouse_file.read(&mut mouse_buffer).is_ok() {
             for chunk in mouse_buffer.chunks_exact(24) {
-                let mut i = [0u8; 24];
-                i.copy_from_slice(chunk);
-                let mouse_event: InputEvent = unsafe { transmute(i) };
+                let mut event_bytes = [0u8; 24];
+                event_bytes.copy_from_slice(chunk);
+                let mouse_event: InputEvent = unsafe { transmute(event_bytes) };
                 if mouse_event.type_ == 2 && mouse_event.code == 8 {
                     match mouse_event.value {
                         1 => zoom *= 1.1,
@@ -199,17 +195,17 @@ pub fn run() {
         total_input_handling_time += start.elapsed();
 
         let start = Instant::now();
-        apply_force(&mut context);
+        apply_force(&mut population);
         total_simulation_time += start.elapsed();
 
         let start = Instant::now();
-        if clear_between_frames && i % 10 == 0 {
+        if clear_between_frames {
             framebuffer.clear();
         }
         total_clearing_screen_time += start.elapsed();
 
         let start = Instant::now();
-        for (particle, particle_color) in context.population.iter().zip(particles_colors.iter()) {
+        for (particle, particle_color) in population.iter().zip(particles_colors.iter()) {
             if particle.mass == 0.0 {
                 continue;
             }
