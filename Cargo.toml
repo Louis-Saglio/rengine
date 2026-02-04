@@ -8,9 +8,15 @@ edition = "2024"
 
 [dependencies]
 rand = "0.9.2"
-memmap2 = "0.9.8"
+memmap2 = { version = "0.9.9", optional = true }
 rayon = "1.11.0"
 load_env_var_as = {"path" = "./load_env_var_as"}
+
+[features]
+benchmark = []
+framebuffer = ["dep:memmap2"]
+e2e-test = ["dep:memmap2"]
+default = ["framebuffer"]
 
 [profile.release]
 opt-level = 3
