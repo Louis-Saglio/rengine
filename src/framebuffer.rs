@@ -155,17 +155,17 @@ pub fn run(population: &mut Population) {
                 let kb_event: InputEvent = unsafe { transmute(event_bytes) };
                 if kb_event.type_ == 1 {
                     match kb_event.code {
-                        105 => shift.0 += 10,
-                        106 => shift.0 -= 10,
-                        103 => shift.1 += 10,
-                        108 => shift.1 -= 10,
-                        20 => {
+                        105 => shift.0 += 10, // LEFT
+                        106 => shift.0 -= 10, // RIGHT
+                        103 => shift.1 += 10, // UP
+                        108 => shift.1 -= 10, // DOWN
+                        20 => { // T
                             if kb_event.value == 1 {
                                 clear_between_frames = !clear_between_frames
                             }
                         }
-                        16 => quit = true,
-                        19 => {
+                        16 => quit = true, // Q
+                        19 => { // R
                             if kb_event.value == 1 {
                                 dim_0 = (dim_0 + 1) % DIMENSIONS;
                                 dim_1 = (dim_1 + 1) % DIMENSIONS;
