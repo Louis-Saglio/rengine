@@ -1,8 +1,8 @@
 // Responsible for defining newtonian physic
 
 use load_env_var_as::{
-    get_default_particle_mass_from_env_var, get_dimensions_from_env_var, get_g_from_env_var,
-    get_minimal_distance_from_env_var, get_pop_size_from_env_var,
+    distance_squared as distance_squared_macro, get_default_particle_mass_from_env_var, get_dimensions_from_env_var,
+    get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
 };
 use rand::Rng;
 use rayon::iter::IndexedParallelIterator;
@@ -146,37 +146,9 @@ impl Particle {
     }
 }
 
+#[inline(always)]
 pub fn distance_squared(Coordinates(a): Coordinates, Coordinates(b): Coordinates) -> f64 {
-    if DIMENSIONS == 2 {
-        let diff0 = a[0] - b[0];
-        let diff1 = a[1] - b[1];
-        diff0 * diff0 + diff1 * diff1
-    } else if DIMENSIONS == 3 {
-        let diff0 = a[0] - b[0];
-        let diff1 = a[1] - b[1];
-        let diff2 = a[2] - b[2];
-        diff0 * diff0 + diff1 * diff1 + diff2 * diff2
-    } else if DIMENSIONS == 4 {
-        let diff0 = a[0] - b[0];
-        let diff1 = a[1] - b[1];
-        let diff2 = a[2] - b[2];
-        let diff3 = a[3] - b[3];
-        diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3
-    } else if DIMENSIONS == 5 {
-        let diff0 = a[0] - b[0];
-        let diff1 = a[1] - b[1];
-        let diff2 = a[2] - b[2];
-        let diff3 = a[3] - b[3];
-        let diff4 = a[4] - b[4];
-        diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 + diff4 * diff4
-    } else {
-        let mut sum = 0.0;
-        for i in 0..DIMENSIONS {
-            let diff = a[i] - b[i];
-            sum += diff * diff;
-        }
-        sum
-    }
+    distance_squared_macro!(a, b)
 }
 
 pub fn apply_force(population: &mut Population) {
