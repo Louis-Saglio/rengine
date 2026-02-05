@@ -8,32 +8,8 @@ PARTICLE_SHAPE=circle
 DEFAULT_PARTICLE_MASS=10
 
 
-UPS: 909
-Total time: 11681ms
-Simulation time: 2383ms
-Rendering time: 526ms
-Drawing time: 6378ms
-Clearing screen time: 2366ms
-Input handling time: 20ms
-Unaccounted time: 6ms
 
-UPS: 909
-Total time: 11860ms
-Simulation time: 2461ms
-Rendering time: 533ms
-Drawing time: 6449ms
-Clearing screen time: 2394ms
-Input handling time: 17ms
-Unaccounted time: 4ms
-
-UPS: 909
-Total time: 11927ms
-Simulation time: 2555ms
-Rendering time: 540ms
-Drawing time: 6432ms
-Clearing screen time: 2375ms
-Input handling time: 18ms
-Unaccounted time: 5ms
+Added standard benchmark
 
 UPS: 909
 Total time: 11837ms
@@ -42,4 +18,69 @@ Rendering time: 533ms
 Drawing time: 6500ms
 Clearing screen time: 2410ms
 Input handling time: 18ms
+Unaccounted time: 6ms
+
+
+
+Add comments for keyboard event codes in keyboard handling code
+
+UPS: 909
+Total time: 11802ms
+Simulation time: 2554ms
+Rendering time: 524ms
+Drawing time: 6335ms
+Clearing screen time: 2359ms
+Input handling time: 22ms
+Unaccounted time: 5ms
+
+
+
+Refactor build variants to use feature flags
+
+UPS: 909
+Total time: 11583ms
+Simulation time: 2553ms
+Rendering time: 510ms
+Drawing time: 6184ms
+Clearing screen time: 2304ms
+Input handling time: 24ms
+Unaccounted time: 4ms
+
+
+
+Refactor `Coordinates` into a struct to improve code clarity and type safety
+
+UPS: 909
+Total time: 11882ms
+Simulation time: 2559ms
+Rendering time: 517ms
+Drawing time: 6372ms
+Clearing screen time: 2405ms
+Input handling time: 22ms
+Unaccounted time: 5ms
+
+
+
+Refactor `Coordinates` initialization and access methods for improved readability and type safety
+
+UPS: 1000
+Total time: 10038ms
+Simulation time: 1028ms
+Rendering time: 343ms
+Drawing time: 6236ms
+Clearing screen time: 2399ms
+Input handling time: 24ms
+Unaccounted time: 5ms
+
+
+
+Refactor imports in `main.rs` to optimize for feature-specific builds
+
+UPS: 1000
+Total time: 10119ms
+Simulation time: 1063ms
+Rendering time: 325ms
+Drawing time: 6265ms
+Clearing screen time: 2433ms
+Input handling time: 23ms
 Unaccounted time: 6ms
