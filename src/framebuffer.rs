@@ -211,16 +211,16 @@ pub fn run(population: &mut Population) {
             }
             if PARTICLE_SHAPE == "square" {
                 framebuffer.draw_square(
-                    (particle.position[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
-                    (particle.position[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
+                    (particle.position.0[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+                    (particle.position.0[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
                     particle.mass.sqrt() as usize,
                     particle.mass.sqrt() as usize,
                     particle_color,
                 );
             } else {
                 framebuffer.draw_circle(
-                    (particle.position[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
-                    (particle.position[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
+                    (particle.position.0[dim_0] * zoom + (SCREEN_WIDTH as f64 / 2f64)) as isize + shift.0,
+                    (particle.position.0[dim_1] * zoom + (SCREEN_HEIGHT as f64 / 2f64)) as isize + shift.1,
                     particle.mass.sqrt() as usize,
                     particle_color,
                 );
