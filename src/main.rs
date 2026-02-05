@@ -1,22 +1,22 @@
-use rengine::physics::{Coordinates, Particle};
-
-#[cfg(any(feature = "framebuffer", feature = "e2e-test"))]
-use rengine::framebuffer;
-#[cfg(feature = "benchmark")]
-use rengine::raw_engine;
-
 #[cfg(feature = "benchmark")]
 fn main() {
+    use rengine::physics::Particle;
+    use rengine::raw_engine;
     raw_engine::run(Particle::new_random_pop_in_screen(2560, 1440));
 }
 
 #[cfg(feature = "framebuffer")]
 fn main() {
+    use rengine::framebuffer;
+    use rengine::physics::Particle;
     framebuffer::run(&mut Particle::new_random_pop_in_screen(2560, 1440));
 }
 
 #[cfg(feature = "e2e-test")]
 fn main() {
+    use rengine::framebuffer;
+    use rengine::physics::Coordinates;
+    use rengine::physics::Particle;
     let mut pop = Particle::new_test_pop();
     framebuffer::run(&mut pop);
     assert_eq!(
