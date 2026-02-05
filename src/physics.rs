@@ -20,9 +20,6 @@ impl Coordinates {
     pub fn new(coordinates: [f64; DIMENSIONS]) -> Self {
         Coordinates(coordinates)
     }
-    pub fn as_value(&self) -> [f64; DIMENSIONS] {
-        self.0
-    }
 }
 
 impl Index<usize> for Coordinates {
@@ -92,7 +89,7 @@ impl Particle {
             let mut position = DEFAULT_COORDINATES;
             position[0] = rng.random_range((-half_width)..half_width);
             position[1] = rng.random_range((-half_height)..half_height);
-            for position in position.as_value().iter_mut().skip(2) {
+            for position in position.0.iter_mut().skip(2) {
                 *position = rng.random_range(-100.0..100.0);
             }
             *slot = Self {
