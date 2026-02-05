@@ -3,7 +3,7 @@ use quote::quote;
 
 #[proc_macro]
 pub fn get_dimensions_from_env_var(_input: TokenStream) -> TokenStream {
-    let dim_str = option_env!("DIMENSIONS").unwrap_or("5");
+    let dim_str = option_env!("DIMENSIONS").unwrap_or("2");
     let dim_usize = dim_str.parse::<usize>().expect("Expected DIMENSIONS to be usize");
     let expanded = quote! {
         #dim_usize
