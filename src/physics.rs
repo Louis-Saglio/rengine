@@ -8,12 +8,36 @@ use rand::Rng;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use std::array;
+use std::ops::{Index, IndexMut};
 use std::sync::Mutex;
 
 pub const DIMENSIONS: usize = get_dimensions_from_env_var!();
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
-pub struct Coordinates(pub [f64; DIMENSIONS]);
+pub struct Coordinates([f64; DIMENSIONS]);
+
+impl Coordinates {
+    pub fn new(coordinates: [f64; DIMENSIONS]) -> Self {
+        Coordinates(coordinates)
+    }
+    pub fn as_value(&self) -> [f64; DIMENSIONS] {
+        self.0
+    }
+}
+
+impl Index<usize> for Coordinates {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl IndexMut<usize> for Coordinates {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
 
 const DEFAULT_COORDINATES: Coordinates = Coordinates([0f64; DIMENSIONS]);
 
@@ -65,16 +89,16 @@ impl Particle {
         let half_width = width as f64 / 2f64;
         let half_height = height as f64 / 2f64;
         for slot in pop.iter_mut() {
-            let mut position = DEFAULT_COORDINATES.0;
+            let mut position = DEFAULT_COORDINATES;
             position[0] = rng.random_range((-half_width)..half_width);
             position[1] = rng.random_range((-half_height)..half_height);
-            for position in position.iter_mut().skip(2) {
+            for position in position.as_value().iter_mut().skip(2) {
                 *position = rng.random_range(-100.0..100.0);
             }
             *slot = Self {
                 mass: get_default_particle_mass_from_env_var!(),
                 speed: DEFAULT_COORDINATES,
-                position: Coordinates(position),
+                position,
             };
         }
         pop
@@ -92,8 +116,8 @@ impl Particle {
                 speed: DEFAULT_COORDINATES,
                 position: {
                     let mut position = DEFAULT_COORDINATES;
-                    position.0[0] = 100f64;
-                    position.0[1] = 100f64;
+                    position[0] = 100f64;
+                    position[1] = 100f64;
                     position
                 },
             };
@@ -102,8 +126,8 @@ impl Particle {
                 speed: DEFAULT_COORDINATES,
                 position: {
                     let mut position = DEFAULT_COORDINATES;
-                    position.0[0] = 100f64;
-                    position.0[1] = -100f64;
+                    position[0] = 100f64;
+                    position[1] = -100f64;
                     position
                 },
             };
@@ -112,8 +136,8 @@ impl Particle {
                 speed: DEFAULT_COORDINATES,
                 position: {
                     let mut position = DEFAULT_COORDINATES;
-                    position.0[0] = -100f64;
-                    position.0[1] = -100f64;
+                    position[0] = -100f64;
+                    position[1] = -100f64;
                     position
                 },
             }
@@ -185,8 +209,8 @@ pub fn apply_force(population: &mut Population) {
 
                     // Accelerate the two particles in all dimensions
                     for i in 0..DIMENSIONS {
-                        let direction = particle_b.position.0[i] - particle_a.position.0[i];
-                        computed_particle_a.speed.0[i] += direction * force_by_mass_a;
+                        let direction = particle_b.position[i] - particle_a.position[i];
+                        computed_particle_a.speed[i] += direction * force_by_mass_a;
                     }
 
                     if distance_squared < MINIMAL_DISTANCE_SQUARED {
@@ -199,7 +223,7 @@ pub fn apply_force(population: &mut Population) {
             }
             // Move particle based on its speed during the previous frame
             for i in 0..DIMENSIONS {
-                computed_particle_a.position.0[i] += particle_a.speed.0[i];
+                computed_particle_a.position[i] += particle_a.speed[i];
             }
         });
 
@@ -217,11 +241,11 @@ pub fn apply_force(population: &mut Population) {
         population[index_to_delete].mass = 0f64;
         population[index_to_fuse].mass = particle_a.mass + particle_b.mass;
         population[index_to_fuse].position.0 = array::from_fn(|i| {
-            (particle_a.position.0[i] * particle_a.mass + particle_b.position.0[i] * particle_b.mass)
+            (particle_a.position[i] * particle_a.mass + particle_b.position[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
         population[index_to_fuse].speed.0 = array::from_fn(|i| {
-            (particle_a.speed.0[i] * particle_a.mass + particle_b.speed.0[i] * particle_b.mass)
+            (particle_a.speed[i] * particle_a.mass + particle_b.speed[i] * particle_b.mass)
                 / (particle_a.mass + particle_b.mass)
         });
     }
@@ -229,7 +253,7 @@ pub fn apply_force(population: &mut Population) {
 
 #[cfg(test)]
 pub mod test {
-    use crate::physics::{Particle, Population, apply_force, Coordinates};
+    use crate::physics::{Coordinates, Particle, Population, apply_force};
 
     #[test]
     fn test_apply_force() {
