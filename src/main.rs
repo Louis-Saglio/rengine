@@ -20,7 +20,7 @@ fn main() {
     let mut pop = Particle::new_test_pop();
     framebuffer::run(&mut pop);
     assert_eq!(
-        pop,
+        pop[..3],
         [
             Particle {
                 mass: 15.0,

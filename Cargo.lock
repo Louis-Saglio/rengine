@@ -62,6 +62,7 @@ name = "load_env_var_as"
 version = "0.1.0"
 dependencies = [
  "quote",
+ "syn",
 ]
 
 [[package]]
@@ -160,6 +161,17 @@ dependencies = [
  "memmap2",
  "rand",
  "rayon",
+]
+
+[[package]]
+name = "syn"
+version = "2.0.58"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44cfb93f38070beee36b3fef7d4f5a16f27751d94b187b666a5cc5e9b0d30687"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
 ]
 
 [[package]]
