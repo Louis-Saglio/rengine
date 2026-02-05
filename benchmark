@@ -8,8 +8,32 @@ PARTICLE_SHAPE=circle
 DEFAULT_PARTICLE_MASS=10
 
 
+UPS: 909
+Total time: 11681ms
+Simulation time: 2383ms
+Rendering time: 526ms
+Drawing time: 6378ms
+Clearing screen time: 2366ms
+Input handling time: 20ms
+Unaccounted time: 6ms
 
-Added standard benchmark
+UPS: 909
+Total time: 11860ms
+Simulation time: 2461ms
+Rendering time: 533ms
+Drawing time: 6449ms
+Clearing screen time: 2394ms
+Input handling time: 17ms
+Unaccounted time: 4ms
+
+UPS: 909
+Total time: 11927ms
+Simulation time: 2555ms
+Rendering time: 540ms
+Drawing time: 6432ms
+Clearing screen time: 2375ms
+Input handling time: 18ms
+Unaccounted time: 5ms
 
 UPS: 909
 Total time: 11837ms
@@ -84,3 +108,16 @@ Drawing time: 6265ms
 Clearing screen time: 2433ms
 Input handling time: 23ms
 Unaccounted time: 6ms
+
+
+
+Fix bug in new_random_pop_in_screen where we were writing to a copy instead of the original
+
+UPS: 909
+Total time: 11747ms
+Simulation time: 2648ms
+Rendering time: 520ms
+Drawing time: 6238ms
+Clearing screen time: 2311ms
+Input handling time: 23ms
+Unaccounted time: 5ms
