@@ -253,30 +253,32 @@ pub fn apply_force(population: &mut Population) {
 
 #[cfg(test)]
 pub mod test {
-    use crate::physics::{Coordinates, Particle, Population, apply_force};
+    use crate::physics::{Coordinates, DEFAULT_POP, Particle, apply_force};
 
     #[test]
     fn test_apply_force() {
-        let mut population: Population = [
-            Particle {
-                mass: 3f64,
-                speed: Coordinates([0f64, 0f64]),
-                position: Coordinates([10f64, 10f64]),
-            },
-            Particle {
-                mass: 2f64,
-                speed: Coordinates([0f64, 0f64]),
-                position: Coordinates([-10f64, -10f64]),
-            },
-            Particle {
-                mass: 1f64,
-                speed: Coordinates([0f64, 0f64]),
-                position: Coordinates([10f64, -10f64]),
-            },
-        ];
+        let mut population = DEFAULT_POP;
+        population[0] = Particle {
+            mass: 3f64,
+            speed: Coordinates([0f64, 0f64]),
+            position: Coordinates([10f64, 10f64]),
+        };
+        population[1] = Particle {
+            mass: 2f64,
+            speed: Coordinates([0f64, 0f64]),
+            position: Coordinates([-10f64, -10f64]),
+        };
+        population[2] = Particle {
+            mass: 1f64,
+            speed: Coordinates([0f64, 0f64]),
+            position: Coordinates([10f64, -10f64]),
+        };
         for _ in 0..100 {
-            population = apply_force(&population);
+            apply_force(&mut population);
         }
-        assert_eq!(population[0].position, [-2.6124097114690477, -41.87865599101741])
+        assert_eq!(
+            population[0].position,
+            Coordinates::new([-2.6124097114690477, -41.87865599101741])
+        )
     }
 }
