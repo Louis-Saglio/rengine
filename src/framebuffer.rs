@@ -1,5 +1,5 @@
 use crate::physics::{DIMENSIONS, POP_SIZE, Population, apply_force};
-use load_env_var_as::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
+use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
 use rand::random;
 use std::array;
