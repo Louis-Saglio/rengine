@@ -1,14 +1,15 @@
 use crate::physics::{DIMENSIONS, POP_SIZE, Population, apply_force};
-use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use memmap2::{MmapMut, MmapOptions};
+use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use rand::random;
-use std::array;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::mem::transmute;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use std::{array, fs};
 
 const BYTES_PER_PIXEL: usize = 4;
 const SCREEN_WIDTH: usize = 2560;
@@ -93,6 +94,26 @@ impl Framebuffer {
     }
 }
 
+fn open_input_event_devices(device_type: &str) -> Vec<File> {
+    fs::read_dir("/dev/input/by-id")
+        .into_iter()
+        .flat_map(|entries| entries.flatten())
+        .filter(|entry| {
+            entry
+                .file_name()
+                .as_bytes()
+                .ends_with([b"event-", device_type.as_bytes()].concat().as_slice())
+        })
+        .filter_map(|entry| {
+            OpenOptions::new()
+                .read(true)
+                .custom_flags(0x800)
+                .open(entry.path())
+                .ok()
+        })
+        .collect()
+}
+
 #[repr(C)]
 #[derive(Debug)]
 struct InputEvent {
@@ -102,19 +123,24 @@ struct InputEvent {
     value: i32,
 }
 
+fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
+    let mut events = vec![];
+    for file in files {
+        let mut buffer = vec![0u8; 24];
+        // todo: bug here, only one event will be read instead of all the ones in the file
+        if file.read(&mut buffer).is_ok() {
+            events.extend(buffer.chunks_exact(24).map(|chunk| {
+                let chunk: [u8; 24] = chunk.try_into().unwrap();
+                unsafe { transmute(chunk) }
+            }));
+        }
+    }
+    events
+}
+
 pub fn run(population: &mut Population) {
-    let mut kb_file = OpenOptions::new()
-        .read(true)
-        .custom_flags(0x800)
-        .open("/dev/input/event4")
-        .expect("Unable to open keyboard device");
-
-    let mut mouse_file = OpenOptions::new()
-        .read(true)
-        .custom_flags(0x800)
-        .open("/dev/input/event2")
-        .expect("Unable to open mouse device");
-
+    let mut keyboards = open_input_event_devices("kbd");
+    let mut mouses = open_input_event_devices("mouse");
     let mut framebuffer = Framebuffer::new();
 
     let particles_colors: [[u8; BYTES_PER_PIXEL]; POP_SIZE] = array::from_fn(|_| random());
@@ -147,50 +173,38 @@ pub fn run(population: &mut Population) {
         let update_start = Instant::now();
 
         let start = Instant::now();
-        let mut kb_buffer = vec![0u8; 24];
-        if kb_file.read(&mut kb_buffer).is_ok() {
-            for chunk in kb_buffer.chunks_exact(24) {
-                let mut event_bytes = [0u8; 24];
-                event_bytes.copy_from_slice(chunk);
-                let kb_event: InputEvent = unsafe { transmute(event_bytes) };
-                if kb_event.type_ == 1 {
-                    match kb_event.code {
-                        105 => shift.0 += 10, // LEFT
-                        106 => shift.0 -= 10, // RIGHT
-                        103 => shift.1 += 10, // UP
-                        108 => shift.1 -= 10, // DOWN
-                        20 => {
-                            // T
-                            if kb_event.value == 1 {
-                                clear_between_frames = !clear_between_frames
-                            }
+        for kb_event in read_input_events(&mut keyboards) {
+            if kb_event.type_ == 1 {
+                match kb_event.code {
+                    105 => shift.0 += 10, // LEFT
+                    106 => shift.0 -= 10, // RIGHT
+                    103 => shift.1 += 10, // UP
+                    108 => shift.1 -= 10, // DOWN
+                    20 => {
+                        // T
+                        if kb_event.value == 1 {
+                            clear_between_frames = !clear_between_frames
                         }
-                        16 => quit = true, // Q
-                        19 => {
-                            // R
-                            if kb_event.value == 1 {
-                                dim_0 = (dim_0 + 1) % DIMENSIONS;
-                                dim_1 = (dim_1 + 1) % DIMENSIONS;
-                            }
-                        }
-                        _ => {}
                     }
+                    16 => quit = true, // Q
+                    19 => {
+                        // R
+                        if kb_event.value == 1 {
+                            dim_0 = (dim_0 + 1) % DIMENSIONS;
+                            dim_1 = (dim_1 + 1) % DIMENSIONS;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
 
-        let mut mouse_buffer = vec![0u8; 24];
-        if mouse_file.read(&mut mouse_buffer).is_ok() {
-            for chunk in mouse_buffer.chunks_exact(24) {
-                let mut event_bytes = [0u8; 24];
-                event_bytes.copy_from_slice(chunk);
-                let mouse_event: InputEvent = unsafe { transmute(event_bytes) };
-                if mouse_event.type_ == 2 && mouse_event.code == 8 {
-                    match mouse_event.value {
-                        1 => zoom *= 1.1,
-                        -1 => zoom *= 0.9,
-                        _ => {}
-                    }
+        for mouse_event in read_input_events(&mut mouses) {
+            if mouse_event.type_ == 2 && mouse_event.code == 8 {
+                match mouse_event.value {
+                    1 => zoom *= 1.1,
+                    -1 => zoom *= 0.9,
+                    _ => {}
                 }
             }
         }
