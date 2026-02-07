@@ -1,24 +1,22 @@
-rotate camera partially between dimensions
+ffmpeg -f fbdev -framerate 25 -i /dev/fb0 -vf format=bgr0 -f sdl "Framebuffer Display"
+
+rotate the camera partially between dimensions
 
 reset camera keybinding
 
 pause/slowdown/speedup ups
 
-select particle with mouse
+select particle with the mouse
 
-speed based particle color
-
-device selector
+speed-based particle color
 
 verify that rengine has enough stack
 
-clear screen only when enough time passed since the last clear screen
+clear screen only when enough time has passed since the last clear screen
 
 move pop initialization out of physics
 
 try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
-
-ffmpeg -f fbdev -framerate 25 -i /dev/fb0 -vf format=bgr0 -f sdl "Framebuffer Display"
 
 mass should be cube of the size
 
