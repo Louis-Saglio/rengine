@@ -19,3 +19,15 @@ move pop initialization out of physics
 try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
 
 ffmpeg -f fbdev -framerate 25 -i /dev/fb0 -vf format=bgr0 -f sdl "Framebuffer Display"
+
+mass should be cube of the size
+
+remove blinking caret
+
+display text
+
+zomm/unzoom with + and -
+
+erase trajectories before moving with arrow keys
+
+support input devices plug/unplug
