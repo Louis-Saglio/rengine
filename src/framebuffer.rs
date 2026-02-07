@@ -3,7 +3,7 @@ use memmap2::{MmapMut, MmapOptions};
 use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use rand::random;
 use std::fs::{File, OpenOptions};
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 use std::mem::transmute;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::OpenOptionsExt;
@@ -126,13 +126,18 @@ struct InputEvent {
 fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
     let mut events = vec![];
     for file in files {
-        let mut buffer = vec![0u8; 24];
-        // todo: bug here, only one event will be read instead of all the ones in the file
-        if file.read(&mut buffer).is_ok() {
-            events.extend(buffer.chunks_exact(24).map(|chunk| {
+        let mut buffer = [0u8; 24];
+        match file.read(&mut buffer) {
+            Ok(24) => events.extend(buffer.chunks_exact(24).map(|chunk| {
                 let chunk: [u8; 24] = chunk.try_into().unwrap();
                 unsafe { transmute(chunk) }
-            }));
+            })),
+            Ok(_) => {}
+            Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    break;
+                }
+            }
         }
     }
     events
@@ -255,7 +260,7 @@ pub fn run(population: &mut Population) {
         }
     }
 
-    println!("UPS: {}", i as u64 / engine_start_instant.elapsed().as_secs());
+    println!("UPS: {}", i as f32 / engine_start_instant.elapsed().as_secs() as f32);
     println!("Total time: {}ms", engine_start_instant.elapsed().as_millis());
     println!("Simulation time: {}ms", total_simulation_time.as_millis());
     println!("Rendering time: {}ms", total_rendering_time.as_millis());
