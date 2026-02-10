@@ -18,8 +18,6 @@ move pop initialization out of physics
 
 try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
 
-mass should be cube of the size
-
 remove blinking caret
 
 display text
