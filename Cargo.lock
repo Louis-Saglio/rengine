@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.164"
+version = "0.2.181"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "433bfe06b8c75da9b2e3fbea6e5329ff87748f0b144ef75306e674c3f6f7c13f"
+checksum = "459427e2af2b9c839b132acb702a1c654d95e10f8c326bfc2ad11310e458b1c5"
 
 [[package]]
 name = "memmap2"
@@ -157,6 +157,7 @@ dependencies = [
 name = "rengine"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "memmap2",
  "proc_macros",
  "rand",

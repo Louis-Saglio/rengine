@@ -10,6 +10,7 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use std::{array, fs};
+use std::os::fd::AsRawFd;
 
 const BYTES_PER_PIXEL: usize = 4;
 const SCREEN_WIDTH: usize = 2560;
@@ -110,7 +111,6 @@ fn open_input_event_devices(device_type: &str) -> Vec<File> {
                 .custom_flags(0x800)
                 .open(entry.path())
                 .ok()
-                .inspect(|file| println!("{file:?}"))
         })
         .collect()
 }
@@ -146,9 +146,23 @@ fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
     events
 }
 
+const KDSETMODE: libc::c_ulong = 0x4B3A;
+const KD_GRAPHICS: libc::c_long = 0x01;
+const KD_TEXT: libc::c_long = 0x00;
+
 pub fn run(population: &mut Population) {
+    let tty = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")
+        .expect("Unable to open tty");
+    unsafe {
+        libc::ioctl(tty.as_raw_fd(), KDSETMODE, KD_GRAPHICS);
+    }
+
     let mut keyboards = open_input_event_devices("kbd");
     let mut mouses = open_input_event_devices("mouse");
+
     let mut framebuffer = Framebuffer::new();
 
     let particles_colors: [[u8; BYTES_PER_PIXEL]; POP_SIZE] = array::from_fn(|_| random());
@@ -262,6 +276,10 @@ pub fn run(population: &mut Population) {
         } else if update_duration < DESIRED_UPDATE_DURATION {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
         }
+    }
+
+    unsafe {
+        libc::ioctl(tty.as_raw_fd(), KDSETMODE, KD_TEXT);
     }
 
     println!("UPS: {}", i as f32 / engine_start_instant.elapsed().as_secs() as f32);
