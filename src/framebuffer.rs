@@ -1,16 +1,16 @@
-use crate::physics::{apply_force, Population, DIMENSIONS, POP_SIZE};
+use crate::physics::{DIMENSIONS, POP_SIZE, Population, apply_force};
 use memmap2::{MmapMut, MmapOptions};
 use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use rand::random;
 use std::fs::{File, OpenOptions};
 use std::io::{ErrorKind, Read};
 use std::mem::transmute;
+use std::os::fd::AsRawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::OpenOptionsExt;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use std::{array, fs};
-use std::os::fd::AsRawFd;
 
 const BYTES_PER_PIXEL: usize = 4;
 const SCREEN_WIDTH: usize = 2560;
@@ -196,25 +196,18 @@ pub fn run(population: &mut Population) {
 
         let start = Instant::now();
         for kb_event in read_input_events(&mut keyboards) {
-            if kb_event.type_ == 1 {
+            if kb_event.type_ == 1 && kb_event.value == 1 || kb_event.value == 2 {
                 match kb_event.code {
-                    105 => shift.0 += 10, // LEFT
-                    106 => shift.0 -= 10, // RIGHT
-                    103 => shift.1 += 10, // UP
-                    108 => shift.1 -= 10, // DOWN
-                    20 => {
-                        // T
-                        if kb_event.value == 1 {
-                            clear_between_frames = !clear_between_frames
-                        }
-                    }
-                    16 => quit = true, // Q
+                    105 => shift.0 += 10,                               // LEFT
+                    106 => shift.0 -= 10,                               // RIGHT
+                    103 => shift.1 += 10,                               // UP
+                    108 => shift.1 -= 10,                               // DOWN
+                    20 => clear_between_frames = !clear_between_frames, // T
+                    16 => quit = true,                                  // Q
                     19 => {
                         // R
-                        if kb_event.value == 1 {
-                            dim_0 = (dim_0 + 1) % DIMENSIONS;
-                            dim_1 = (dim_1 + 1) % DIMENSIONS;
-                        }
+                        dim_0 = (dim_0 + 1) % DIMENSIONS;
+                        dim_1 = (dim_1 + 1) % DIMENSIONS;
                     }
                     _ => {}
                 }
