@@ -1,4 +1,4 @@
-use crate::physics::{DIMENSIONS, POP_SIZE, Population, apply_force};
+use crate::physics::{apply_force, Population, DIMENSIONS, POP_SIZE};
 use memmap2::{MmapMut, MmapOptions};
 use proc_macros::{get_desired_ups_from_env_var, get_iterations_from_env_var, get_particle_shape_from_env_var};
 use rand::random;
@@ -116,12 +116,102 @@ fn open_input_event_devices(device_type: &str) -> Vec<File> {
 }
 
 #[repr(C)]
-#[derive(Debug)]
-struct InputEvent {
+#[derive(Debug, Clone, Copy)]
+struct RawInputEvent {
     time: [u64; 2],
     type_: u16,
     code: u16,
     value: i32,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum KeyCode {
+    Left,
+    Right,
+    Up,
+    Down,
+    T,
+    U,
+    Q,
+    R,
+    Unknown(u16),
+}
+
+impl From<u16> for KeyCode {
+    fn from(code: u16) -> Self {
+        match code {
+            105 => KeyCode::Left,
+            106 => KeyCode::Right,
+            103 => KeyCode::Up,
+            108 => KeyCode::Down,
+            20 => KeyCode::T,
+            22 => KeyCode::U,
+            16 => KeyCode::Q,
+            19 => KeyCode::R,
+            _ => KeyCode::Unknown(code),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum KeyState {
+    Released,
+    Pressed,
+    Autorepeat,
+    Unknown(i32),
+}
+
+impl From<i32> for KeyState {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => KeyState::Released,
+            1 => KeyState::Pressed,
+            2 => KeyState::Autorepeat,
+            _ => KeyState::Unknown(value),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum RelativeAxis {
+    Wheel,
+    Unknown(u16),
+}
+
+impl From<u16> for RelativeAxis {
+    fn from(code: u16) -> Self {
+        match code {
+            8 => RelativeAxis::Wheel,
+            _ => RelativeAxis::Unknown(code),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum InputEvent {
+    Keyboard { key: KeyCode, state: KeyState },
+    Relative { axis: RelativeAxis, value: i32 },
+    Unknown { type_: u16, code: u16, value: i32 },
+}
+
+impl From<RawInputEvent> for InputEvent {
+    fn from(raw: RawInputEvent) -> Self {
+        match raw.type_ {
+            1 => InputEvent::Keyboard {
+                key: KeyCode::from(raw.code),
+                state: KeyState::from(raw.value),
+            },
+            2 => InputEvent::Relative {
+                axis: RelativeAxis::from(raw.code),
+                value: raw.value,
+            },
+            _ => InputEvent::Unknown {
+                type_: raw.type_,
+                code: raw.code,
+                value: raw.value,
+            },
+        }
+    }
 }
 
 fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
@@ -132,7 +222,8 @@ fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
             match file.read(&mut buffer) {
                 Ok(24) => events.extend(buffer.chunks_exact(24).map(|chunk| {
                     let chunk: [u8; 24] = chunk.try_into().unwrap();
-                    unsafe { transmute(chunk) }
+                    let raw: RawInputEvent = unsafe { transmute(chunk) };
+                    InputEvent::from(raw)
                 })),
                 Ok(_) => {}
                 Err(err) => {
@@ -194,28 +285,34 @@ pub fn run(population: &mut Population) {
 
         let start = Instant::now();
         for kb_event in read_input_events(&mut keyboards) {
-            if kb_event.type_ == 1 && kb_event.value == 1 || kb_event.value == 2 {
-                match kb_event.code {
-                    105 => shift.0 += 10,                               // LEFT
-                    106 => shift.0 -= 10,                               // RIGHT
-                    103 => shift.1 += 10,                               // UP
-                    108 => shift.1 -= 10,                               // DOWN
-                    20 => clear_between_frames = !clear_between_frames, // T
-                    22 => limit_ups = !limit_ups,                       // U
-                    16 => quit = true,                                  // Q
-                    19 => {
-                        // R
-                        dim_0 = (dim_0 + 1) % DIMENSIONS;
-                        dim_1 = (dim_1 + 1) % DIMENSIONS;
+            match kb_event {
+                InputEvent::Keyboard { key, state } if state == KeyState::Pressed || state == KeyState::Autorepeat => {
+                    match key {
+                        KeyCode::Left => shift.0 += 10,
+                        KeyCode::Right => shift.0 -= 10,
+                        KeyCode::Up => shift.1 += 10,
+                        KeyCode::Down => shift.1 -= 10,
+                        KeyCode::T => clear_between_frames = !clear_between_frames,
+                        KeyCode::U => limit_ups = !limit_ups,
+                        KeyCode::Q => quit = true,
+                        KeyCode::R => {
+                            dim_0 = (dim_0 + 1) % DIMENSIONS;
+                            dim_1 = (dim_1 + 1) % DIMENSIONS;
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
+                _ => println!("{:?}", kb_event),
             }
         }
 
         for mouse_event in read_input_events(&mut mouses) {
-            if mouse_event.type_ == 2 && mouse_event.code == 8 {
-                match mouse_event.value {
+            if let InputEvent::Relative {
+                axis: RelativeAxis::Wheel,
+                value,
+            } = mouse_event
+            {
+                match value {
                     1 => zoom *= 1.1,
                     -1 => zoom *= 0.9,
                     _ => {}
