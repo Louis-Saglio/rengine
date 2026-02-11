@@ -183,6 +183,8 @@ pub fn run(population: &mut Population) {
 
     let mut quit = false;
 
+    let mut limit_ups = true;
+
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
 
@@ -203,6 +205,7 @@ pub fn run(population: &mut Population) {
                     103 => shift.1 += 10,                               // UP
                     108 => shift.1 -= 10,                               // DOWN
                     20 => clear_between_frames = !clear_between_frames, // T
+                    22 => limit_ups = !limit_ups,                       // U
                     16 => quit = true,                                  // Q
                     19 => {
                         // R
@@ -265,8 +268,7 @@ pub fn run(population: &mut Population) {
         total_drawing_time += start.elapsed();
 
         let update_duration = update_start.elapsed();
-        if DESIRED_UPDATE_DURATION.is_zero() {
-        } else if update_duration < DESIRED_UPDATE_DURATION {
+        if update_duration < DESIRED_UPDATE_DURATION && limit_ups {
             sleep(DESIRED_UPDATE_DURATION - update_duration);
         }
     }
