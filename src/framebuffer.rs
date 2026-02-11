@@ -90,6 +90,14 @@ impl Framebuffer {
         }
     }
 
+    pub fn draw_cross(&mut self, x: isize, y: isize, color: &[u8; BYTES_PER_PIXEL]) {
+        let size = 10;
+        for i in -size..=size {
+            self.draw_pixel(x + i, y, color);
+            self.draw_pixel(x, y + i, color);
+        }
+    }
+
     pub fn draw(&mut self) {
         self.mmap.copy_from_slice(self.buffer.as_slice());
     }
@@ -268,7 +276,7 @@ pub fn run(population: &mut Population) {
     let mut limit_ups = true;
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
-    let mut mouse_position: (i32, i32) = (0, 0);
+    let mut mouse_position: (i32, i32) = (SCREEN_WIDTH as i32 / 2, SCREEN_HEIGHT as i32 / 2);
     let mut quit = false;
 
     let mut total_simulation_time = Duration::ZERO;
@@ -364,6 +372,7 @@ pub fn run(population: &mut Population) {
                 );
             }
         }
+        framebuffer.draw_cross(mouse_position.0 as isize, mouse_position.1 as isize, &[255, 255, 255, 255]);
         total_rendering_time += start.elapsed();
 
         let start = Instant::now();
