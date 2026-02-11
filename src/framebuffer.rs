@@ -174,6 +174,8 @@ impl From<i32> for KeyState {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RelativeAxis {
+    X,
+    Y,
     Wheel,
     Unknown(u16),
 }
@@ -181,6 +183,8 @@ pub enum RelativeAxis {
 impl From<u16> for RelativeAxis {
     fn from(code: u16) -> Self {
         match code {
+            0 => RelativeAxis::X,
+            1 => RelativeAxis::Y,
             8 => RelativeAxis::Wheel,
             _ => RelativeAxis::Unknown(code),
         }
@@ -264,6 +268,7 @@ pub fn run(population: &mut Population) {
     let mut limit_ups = true;
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
+    let mut mouse_position: (i32, i32) = (0, 0);
     let mut quit = false;
 
     let mut total_simulation_time = Duration::ZERO;
@@ -307,15 +312,20 @@ pub fn run(population: &mut Population) {
         }
 
         for mouse_event in read_input_events(&mut mouses) {
-            if let InputEvent::Relative {
-                axis: RelativeAxis::Wheel,
-                value,
-            } = mouse_event
-            {
-                match value {
-                    1 => zoom *= 1.1,
-                    -1 => zoom *= 0.9,
-                    _ => {}
+            if let InputEvent::Relative { axis, value } = mouse_event {
+                match axis {
+                    RelativeAxis::X => {
+                        mouse_position.0 = (mouse_position.0 + value).clamp(0, SCREEN_WIDTH as i32);
+                    }
+                    RelativeAxis::Y => {
+                        mouse_position.1 = (mouse_position.1 + value).clamp(0, SCREEN_HEIGHT as i32);
+                    }
+                    RelativeAxis::Wheel => match value {
+                        1 => zoom *= 1.1,
+                        -1 => zoom *= 0.9,
+                        _ => {}
+                    },
+                    RelativeAxis::Unknown(_) => {}
                 }
             }
         }
