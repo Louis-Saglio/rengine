@@ -25,3 +25,5 @@ zomm/unzoom with + and -
 erase trajectories before moving with arrow keys
 
 support input devices plug/unplug
+
+add seed to make randomization deterministic

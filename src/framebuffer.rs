@@ -170,8 +170,10 @@ pub fn run(population: &mut Population) {
     let mut zoom: f64 = 1.0;
     let mut shift: (isize, isize) = (0, 0);
     let mut clear_between_frames = true;
-
-    framebuffer.clear();
+    let mut limit_ups = true;
+    let mut dim_0: usize = 0;
+    let mut dim_1: usize = 1;
+    let mut quit = false;
 
     let mut total_simulation_time = Duration::ZERO;
     let mut total_rendering_time = Duration::ZERO;
@@ -181,13 +183,7 @@ pub fn run(population: &mut Population) {
 
     let engine_start_instant = Instant::now();
 
-    let mut quit = false;
-
-    let mut limit_ups = true;
-
-    let mut dim_0: usize = 0;
-    let mut dim_1: usize = 1;
-
+    framebuffer.clear();
     let mut i = 0;
     loop {
         i += 1;
