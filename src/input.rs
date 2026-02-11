@@ -1,7 +1,6 @@
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{ErrorKind, Read};
-use std::mem::transmute;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::OpenOptionsExt;
 
@@ -23,15 +22,6 @@ pub fn open_input_event_devices(device_type: &str) -> Vec<File> {
                 .ok()
         })
         .collect()
-}
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct RawInputEvent {
-    pub time: [u64; 2],
-    pub type_: u16,
-    pub code: u16,
-    pub value: i32,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -108,21 +98,24 @@ pub enum InputEvent {
     Unknown { type_: u16, code: u16, value: i32 },
 }
 
-impl From<RawInputEvent> for InputEvent {
-    fn from(raw: RawInputEvent) -> Self {
-        match raw.type_ {
+impl InputEvent {
+    pub fn from_bytes(chunk: &[u8; 24]) -> Self {
+        let type_ = u16::from_ne_bytes(chunk[16..18].try_into().unwrap());
+        let code = u16::from_ne_bytes(chunk[18..20].try_into().unwrap());
+        let value = i32::from_ne_bytes(chunk[20..24].try_into().unwrap());
+        match type_ {
             1 => InputEvent::Keyboard {
-                key: KeyCode::from(raw.code),
-                state: KeyState::from(raw.value),
+                key: KeyCode::from(code),
+                state: KeyState::from(value),
             },
             2 => InputEvent::Relative {
-                axis: RelativeAxis::from(raw.code),
-                value: raw.value,
+                axis: RelativeAxis::from(code),
+                value,
             },
             _ => InputEvent::Unknown {
-                type_: raw.type_,
-                code: raw.code,
-                value: raw.value,
+                type_,
+                code,
+                value,
             },
         }
     }
@@ -134,11 +127,7 @@ pub fn read_input_events(files: &mut [File]) -> Vec<InputEvent> {
         let mut buffer = [0u8; 24];
         loop {
             match file.read(&mut buffer) {
-                Ok(24) => events.extend(buffer.chunks_exact(24).map(|chunk| {
-                    let chunk: [u8; 24] = chunk.try_into().unwrap();
-                    let raw: RawInputEvent = unsafe { transmute(chunk) };
-                    InputEvent::from(raw)
-                })),
+                Ok(24) => events.push(InputEvent::from_bytes(&buffer)),
                 Ok(_) => {}
                 Err(err) => {
                     if err.kind() == ErrorKind::WouldBlock {
