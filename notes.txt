@@ -27,3 +27,5 @@ erase trajectories before moving with arrow keys
 support input devices plug/unplug
 
 add seed to make randomization deterministic
+
+display time stats as percentages

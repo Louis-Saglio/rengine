@@ -7,16 +7,16 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = "0.9.2"
-memmap2 = { version = "0.9.9", optional = true }
+rand = "0.10.0"
+memmap2 = "0.9.9"
 rayon = "1.11.0"
 libc = "0.2.181"
 proc_macros = {"path" = "./proc_macros"}
 
 [features]
 benchmark = []
-framebuffer = ["dep:memmap2"]
-e2e-test = ["dep:memmap2"]
+framebuffer = []
+e2e-test = []
 default = ["framebuffer"]
 
 [profile.release]

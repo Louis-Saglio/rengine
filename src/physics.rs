@@ -4,7 +4,7 @@ use proc_macros::{
     distance_squared as distance_squared_macro, get_default_particle_mass_from_env_var, get_dimensions_from_env_var,
     get_g_from_env_var, get_minimal_distance_from_env_var, get_pop_size_from_env_var,
 };
-use rand::Rng;
+use rand::{RngExt};
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use std::array;
