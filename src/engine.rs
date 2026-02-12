@@ -223,11 +223,13 @@ pub fn run(population: &mut Population) {
                 );
             }
         }
-        framebuffer.draw_cross(
-            mouse_position.0 as isize,
-            mouse_position.1 as isize,
-            &[255, 255, 255, 255],
-        );
+        if clear_between_frames {
+            framebuffer.draw_cross(
+                mouse_position.0 as isize,
+                mouse_position.1 as isize,
+                &[255, 255, 255, 255],
+            );
+        }
         total_rendering_time += start.elapsed();
 
         let start = Instant::now();
