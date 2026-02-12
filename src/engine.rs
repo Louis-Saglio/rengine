@@ -166,7 +166,7 @@ pub fn run(population: &mut Population) {
                         _ => {}
                     }
                 }
-                _ => println!("{:?}", kb_event),
+                _ => {},
             }
         }
 

@@ -89,8 +89,9 @@ impl Particle {
             let mut position = DEFAULT_COORDINATES;
             position[0] = rng.random_range((-half_width)..half_width);
             position[1] = rng.random_range((-half_height)..half_height);
+            let range = (half_width + half_height) / 4.0;
             for position in position.0.iter_mut().skip(2) {
-                *position = rng.random_range(-100.0..100.0);
+                *position = rng.random_range(-range..range);
             }
             *slot = Self {
                 mass: get_default_particle_mass_from_env_var!(),

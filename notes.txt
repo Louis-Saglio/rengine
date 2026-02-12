@@ -12,8 +12,6 @@ speed-based particle color
 
 verify that rengine has enough stack
 
-clear screen only when enough time has passed since the last clear screen
-
 move pop initialization out of physics
 
 try avoiding computing force for AB and again for BA by updating B when computing A and protecting it with a lock
@@ -29,3 +27,9 @@ support input devices plug/unplug
 add seed to make randomization deterministic
 
 display time stats as percentages
+
+fix zoom not straight
+
+move with the mouse
+
+optimize rendering speed for small pop size
