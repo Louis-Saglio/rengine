@@ -127,7 +127,7 @@ pub fn run(population: &mut Population) {
     let mut limit_ups = true;
     let mut dim_0: usize = 0;
     let mut dim_1: usize = 1;
-    let mut mouse_position: (i32, i32) = (SCREEN_WIDTH as i32 / 2, SCREEN_HEIGHT as i32 / 2);
+    let mut mouse_position: (isize, isize) = (SCREEN_WIDTH as isize / 2, SCREEN_HEIGHT as isize / 2);
     let mut quit = false;
 
     let mut total_simulation_time = Duration::ZERO;
@@ -150,7 +150,7 @@ pub fn run(population: &mut Population) {
         let start = Instant::now();
         for kb_event in read_input_events(&mut keyboards) {
             match kb_event {
-                InputEvent::Keyboard { key, state } if state == KeyState::Pressed || state == KeyState::Autorepeat => {
+                InputEvent::KeyPressed { key, state } if state == KeyState::Pressed || state == KeyState::Autorepeat => {
                     match key {
                         KeyCode::Left => shift.0 += 10,
                         KeyCode::Right => shift.0 -= 10,
@@ -171,13 +171,13 @@ pub fn run(population: &mut Population) {
         }
 
         for mouse_event in read_input_events(&mut mouses) {
-            if let InputEvent::Relative { axis, value } = mouse_event {
-                match axis {
+            match mouse_event {
+                InputEvent::Relative { axis, value } => match axis {
                     RelativeAxis::X => {
-                        mouse_position.0 = (mouse_position.0 + value).clamp(0, SCREEN_WIDTH as i32);
+                        mouse_position.0 = (mouse_position.0 + value as isize).clamp(0, SCREEN_WIDTH as isize);
                     }
                     RelativeAxis::Y => {
-                        mouse_position.1 = (mouse_position.1 + value).clamp(0, SCREEN_HEIGHT as i32);
+                        mouse_position.1 = (mouse_position.1 + value as isize).clamp(0, SCREEN_HEIGHT as isize);
                     }
                     RelativeAxis::Wheel => match value {
                         1 => zoom *= 1.1,
@@ -185,7 +185,14 @@ pub fn run(population: &mut Population) {
                         _ => {}
                     },
                     RelativeAxis::Unknown(_) => {}
+                },
+                InputEvent::KeyPressed {
+                    key: KeyCode::MouseLeft,
+                    state: KeyState::Pressed,
+                } => {
+                    println!("Mouse left click at: ({}, {})", mouse_position.0, mouse_position.1);
                 }
+                _ => {}
             }
         }
         total_input_handling_time += start.elapsed();
@@ -225,8 +232,8 @@ pub fn run(population: &mut Population) {
         }
         if clear_between_frames {
             framebuffer.draw_cross(
-                mouse_position.0 as isize,
-                mouse_position.1 as isize,
+                mouse_position.0,
+                mouse_position.1,
                 &[255, 255, 255, 255],
             );
         }

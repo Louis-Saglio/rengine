@@ -34,6 +34,7 @@ pub enum KeyCode {
     U,
     Q,
     R,
+    MouseLeft,
     Unknown(u16),
 }
 
@@ -48,6 +49,7 @@ impl From<u16> for KeyCode {
             22 => KeyCode::U,
             16 => KeyCode::Q,
             19 => KeyCode::R,
+            272 => KeyCode::MouseLeft,
             _ => KeyCode::Unknown(code),
         }
     }
@@ -93,7 +95,7 @@ impl From<u16> for RelativeAxis {
 
 #[derive(Debug, Clone, Copy)]
 pub enum InputEvent {
-    Keyboard { key: KeyCode, state: KeyState },
+    KeyPressed { key: KeyCode, state: KeyState },
     Relative { axis: RelativeAxis, value: i32 },
     Unknown { type_: u16, code: u16, value: i32 },
 }
@@ -104,7 +106,7 @@ impl InputEvent {
         let code = u16::from_ne_bytes(chunk[18..20].try_into().unwrap());
         let value = i32::from_ne_bytes(chunk[20..24].try_into().unwrap());
         match type_ {
-            1 => InputEvent::Keyboard {
+            1 => InputEvent::KeyPressed {
                 key: KeyCode::from(code),
                 state: KeyState::from(value),
             },
